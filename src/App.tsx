@@ -37,18 +37,16 @@ const zones: Zone[] = [
   { label: "Purpose", icon: "🌟" },
 ];
 
-const lifeAreas = zones.map((zone) => zone.label);
-
 const fallbackResult: Result = {
   scores: {
-    Mind: 42,
-    Body: 55,
-    Money: 28,
-    Work: 40,
-    Love: 68,
-    Home: 52,
+    Mind: 26,
+    Body: 48,
+    Money: 22,
+    Work: 41,
+    Love: 72,
+    Home: 55,
     "Life Admin": 31,
-    Purpose: 45,
+    Purpose: 44,
   },
   quickWins: [
     "Choose one small life-admin task and finish it today.",
@@ -59,41 +57,75 @@ const fallbackResult: Result = {
   ],
 };
 
-function normaliseScore(value: number | undefined) {
-  if (!value || Number.isNaN(value)) return 50;
-
-  if (value <= 10) {
-    return Math.round(value * 10);
-  }
-
-  return Math.max(0, Math.min(100, Math.round(value)));
+function getScoreColour(score: number) {
+  if (score <= 33) return "#dc2626";
+  if (score <= 67) return "#f59e0b";
+  return "#16a34a";
 }
 
 function getScoreStatus(score: number) {
   if (score <= 33) {
     return {
       label: "Needs attention",
-      color: "#C2410C",
       message:
-        "This area looks like it needs some care. That does not mean failure — it simply means this may be one of the best places to start gently.",
+        "This area looks like it is carrying real pressure at the moment. That does not mean failure — it simply means this may be one of the best places to start gently.",
+      encouragement:
+        "Start small. One clear, manageable action here can create more relief than trying to fix everything at once.",
     };
   }
 
   if (score <= 67) {
     return {
-      label: "Developing",
-      color: "#D97706",
+      label: "Building",
       message:
-        "There is something to work with here. This area is not broken, but it could probably feel lighter, steadier or more organised with a few focused changes.",
+        "There is something to work with here. This area is not broken, but it could probably feel steadier, lighter or more organised with a little focused attention.",
+      encouragement:
+        "You do not need a dramatic overhaul. A few consistent improvements could compound quickly.",
     };
   }
 
   return {
-    label: "Strong area",
-    color: "#15803D",
+    label: "Strong",
     message:
-      "This looks like one of your stronger areas. It is worth noticing what is already working here, because those habits or supports may help other parts of life too.",
+      "This looks like one of your stronger areas. Something here is already working, even if the rest of life feels messy.",
+    encouragement:
+      "Notice what is supporting you here. The same strengths may help you improve other parts of life too.",
   };
+}
+
+function clampScore(value: number | undefined) {
+  if (value === undefined || Number.isNaN(value)) return 50;
+  if (value <= 10) return Math.round(value * 10);
+  return Math.max(0, Math.min(100, Math.round(value)));
+}
+
+function polar(centerX: number, centerY: number, radius: number, angle: number) {
+  const radians = (angle * Math.PI) / 180;
+  return {
+    x: centerX + radius * Math.cos(radians),
+    y: centerY + radius * Math.sin(radians),
+  };
+}
+
+function segmentPath(
+  center: number,
+  innerRadius: number,
+  outerRadius: number,
+  startAngle: number,
+  endAngle: number
+) {
+  const a = polar(center, center, outerRadius, startAngle);
+  const b = polar(center, center, outerRadius, endAngle);
+  const c = polar(center, center, innerRadius, endAngle);
+  const d = polar(center, center, innerRadius, startAngle);
+
+  return [
+    `M ${a.x} ${a.y}`,
+    `A ${outerRadius} ${outerRadius} 0 0 1 ${b.x} ${b.y}`,
+    `L ${c.x} ${c.y}`,
+    `A ${innerRadius} ${innerRadius} 0 0 0 ${d.x} ${d.y}`,
+    "Z",
+  ].join(" ");
 }
 
 export default function App() {
@@ -271,8 +303,8 @@ Use this naturally. Do not list it back mechanically.
           </div>
 
           <div className="life-area-strip">
-            {lifeAreas.map((area) => (
-              <span key={area}>{area}</span>
+            {zones.map((zone) => (
+              <span key={zone.label}>{zone.label}</span>
             ))}
           </div>
 
@@ -484,194 +516,131 @@ Use this naturally. Do not list it back mechanically.
   );
 }
 
-function polarToCartesian(
-  centerX: number,
-  centerY: number,
-  radius: number,
-  angleInDegrees: number
-) {
-  const angleInRadians = (angleInDegrees * Math.PI) / 180;
-
-  return {
-    x: centerX + radius * Math.cos(angleInRadians),
-    y: centerY + radius * Math.sin(angleInRadians),
-  };
-}
-
-function describeSegment(
-  center: number,
-  innerRadius: number,
-  outerRadius: number,
-  startAngle: number,
-  endAngle: number
-) {
-  const outerStart = polarToCartesian(center, center, outerRadius, startAngle);
-  const outerEnd = polarToCartesian(center, center, outerRadius, endAngle);
-  const innerEnd = polarToCartesian(center, center, innerRadius, endAngle);
-  const innerStart = polarToCartesian(center, center, innerRadius, startAngle);
-
-  const largeArcFlag = endAngle - startAngle <= 180 ? "0" : "1";
-
-  return [
-    `M ${outerStart.x} ${outerStart.y}`,
-    `A ${outerRadius} ${outerRadius} 0 ${largeArcFlag} 1 ${outerEnd.x} ${outerEnd.y}`,
-    `L ${innerEnd.x} ${innerEnd.y}`,
-    `A ${innerRadius} ${innerRadius} 0 ${largeArcFlag} 0 ${innerStart.x} ${innerStart.y}`,
-    "Z",
-  ].join(" ");
-}
-
-function getScoreColour(score: number) {
-  if (score <= 33) return "#dc2626";   // red
-  if (score <= 67) return "#f59e0b";   // amber
-  return "#16a34a";                   // green
-}
-
-function getScoreStatus(score: number) {
-  if (score <= 33) {
-    return {
-      label: "Needs attention",
-      message:
-        "This area looks like it’s carrying pressure. That doesn’t mean failure — it simply means this is a good place to start gently.",
-      encouragement:
-        "Start small. Even one simple action here can create noticeable relief.",
-    };
-  }
-
-  if (score <= 67) {
-    return {
-      label: "Building",
-      message:
-        "There is something to work with here. This area isn’t broken, but it could feel steadier or lighter with a bit of focus.",
-      encouragement:
-        "A couple of small improvements here could compound quickly.",
-    };
-  }
-
-  return {
-    label: "Strong",
-    message:
-      "This looks like one of your stronger areas. Something here is working well for you.",
-    encouragement:
-      "Notice what’s working — you may be able to apply that elsewhere.",
-    };
-  }
-}
-
 function LifeWheel({ scores }: { scores: Record<string, number> }) {
   const [activeZone, setActiveZone] = useState("Mind");
-
-  const zones = [
-    { label: "Mind", icon: "🧠" },
-    { label: "Body", icon: "💪" },
-    { label: "Money", icon: "💰" },
-    { label: "Work", icon: "💼" },
-    { label: "Love", icon: "❤️" },
-    { label: "Home", icon: "🏠" },
-    { label: "Life Admin", icon: "🗂️" },
-    { label: "Purpose", icon: "🌟" },
-  ];
 
   const center = 200;
   const innerRadius = 50;
   const maxRadius = 150;
   const gap = 3;
 
-  function polar(cx: number, cy: number, r: number, angle: number) {
-    const rad = (angle * Math.PI) / 180;
-    return {
-      x: cx + r * Math.cos(rad),
-      y: cy + r * Math.sin(rad),
-    };
-  }
-
-  function arc(
-    innerR: number,
-    outerR: number,
-    start: number,
-    end: number
-  ) {
-    const a = polar(center, center, outerR, start);
-    const b = polar(center, center, outerR, end);
-    const c = polar(center, center, innerR, end);
-    const d = polar(center, center, innerR, start);
-
-    return `
-      M ${a.x} ${a.y}
-      A ${outerR} ${outerR} 0 0 1 ${b.x} ${b.y}
-      L ${c.x} ${c.y}
-      A ${innerR} ${innerR} 0 0 0 ${d.x} ${d.y}
-      Z
-    `;
-  }
-
-  const active = zones.find((z) => z.label === activeZone)!;
-  const score = Math.max(0, Math.min(100, scores[active.label] || 50));
-  const status = getScoreStatus(score);
+  const active = zones.find((zone) => zone.label === activeZone) || zones[0];
+  const activeScore = clampScore(scores[active.label]);
+  const activeStatus = getScoreStatus(activeScore);
+  const activeColour = getScoreColour(activeScore);
 
   return (
     <div className="life-wheel-wrap">
-      <svg viewBox="0 0 400 400" className="life-wheel">
-        {zones.map((zone, i) => {
-          const raw = Math.max(0, Math.min(100, scores[zone.label] || 50));
-          const colour = getScoreColour(raw);
+      <svg viewBox="0 0 400 400" className="life-wheel segmented-wheel">
+        {zones.map((zone, index) => {
+          const score = clampScore(scores[zone.label]);
+          const colour = getScoreColour(score);
 
-          const start = -90 + i * 45 + gap;
-          const end = -90 + (i + 1) * 45 - gap;
-
-          const outer =
-            innerRadius + ((maxRadius - innerRadius) * raw) / 100;
-
-          const path = arc(innerRadius, outer, start, end);
-
+          const start = -90 + index * 45 + gap;
+          const end = -90 + (index + 1) * 45 - gap;
           const mid = (start + end) / 2;
-          const labelPos = polar(center, center, 180, mid);
+
+          const scoreRadius =
+            innerRadius + ((maxRadius - innerRadius) * score) / 100;
+
+          const labelPos = polar(center, center, 178, mid);
+          const scorePos = polar(center, center, 104, mid);
 
           return (
             <g
               key={zone.label}
-              onClick={() => setActiveZone(zone.label)}
               className="wheel-zone"
+              onClick={() => setActiveZone(zone.label)}
             >
-              <path d={arc(innerRadius, maxRadius, start, end)}
-                    className="wheel-bg" />
+              <path
+                d={segmentPath(center, innerRadius, maxRadius, start, end)}
+                className={
+                  activeZone === zone.label ? "wheel-bg active" : "wheel-bg"
+                }
+              />
 
-              {raw > 0 && (
+              {score > 0 && (
                 <path
-                  d={path}
+                  d={segmentPath(center, innerRadius, scoreRadius, start, end)}
                   fill={colour}
-                  className="wheel-fill"
-                  style={{
-                    animationDelay: `${i * 80}ms`,
-                  }}
+                  className={
+                    activeZone === zone.label
+                      ? "wheel-fill active"
+                      : "wheel-fill"
+                  }
+                  style={{ animationDelay: `${index * 90}ms` }}
                 />
               )}
 
               <text
                 x={labelPos.x}
-                y={labelPos.y}
+                y={labelPos.y - 9}
                 textAnchor="middle"
-                className="wheel-label"
+                className="wheel-icon"
               >
-                {zone.icon} {zone.label}
+                {zone.icon}
+              </text>
+
+              <text
+                x={labelPos.x}
+                y={labelPos.y + 10}
+                textAnchor="middle"
+                className={
+                  activeZone === zone.label
+                    ? "wheel-label active"
+                    : "wheel-label"
+                }
+              >
+                {zone.label}
+              </text>
+
+              <text
+                x={scorePos.x}
+                y={scorePos.y + 5}
+                textAnchor="middle"
+                className="wheel-score-inside"
+              >
+                {score}
               </text>
             </g>
           );
         })}
 
-        <circle cx={center} cy={center} r="40" className="wheel-centre" />
+        <circle cx={center} cy={center} r="42" className="wheel-centre" />
+
+        <text
+          x={center}
+          y={center - 4}
+          textAnchor="middle"
+          className="wheel-centre-text"
+        >
+          your
+        </text>
+
+        <text
+          x={center}
+          y={center + 13}
+          textAnchor="middle"
+          className="wheel-centre-text"
+        >
+          life
+        </text>
       </svg>
 
-      <div className="active-zone-card">
-        <h3>
-          {active.label} — {score}/100
-        </h3>
+      <div className="active-zone-card" style={{ borderColor: activeColour }}>
+        <div className="active-zone-top">
+          <span>{active.icon}</span>
+          <strong>{active.label}</strong>
+          <em style={{ color: activeColour }}>{activeScore}/100</em>
+        </div>
 
-        <strong>{status.label}</strong>
+        <div className="zone-status" style={{ color: activeColour }}>
+          {activeStatus.label}
+        </div>
 
-        <p>{status.message}</p>
+        <p>{activeStatus.message}</p>
 
-        <p className="encouragement">{status.encouragement}</p>
+        <p className="encouragement">{activeStatus.encouragement}</p>
       </div>
     </div>
   );
