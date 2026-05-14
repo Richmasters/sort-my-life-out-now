@@ -128,6 +128,19 @@ function segmentPath(
   ].join(" ");
 }
 
+function calculateAverage(scores: Record<string, number>) {
+  const values = zones.map((zone) => clampScore(scores[zone.label]));
+  return Math.round(values.reduce((total, score) => total + score, 0) / values.length);
+}
+
+function getLowestZone(scores: Record<string, number>) {
+  return zones.reduce((lowest, zone) => {
+    const score = clampScore(scores[zone.label]);
+    const lowestScore = clampScore(scores[lowest.label]);
+    return score < lowestScore ? zone : lowest;
+  }, zones[0]);
+}
+
 export default function App() {
   const [step, setStep] = useState<Step>("landing");
   const [message, setMessage] = useState("");
@@ -485,34 +498,96 @@ Use this naturally. Do not list it back mechanically.
       )}
 
       {step === "wheel" && result && (
-        <section className="card wheel-card">
-          <p className="eyebrow">Your Life Audit</p>
-
-          <h2>
-            {onboarding.name
-              ? `Here’s the first clear picture, ${onboarding.name}.`
-              : "Here’s the first clear picture."}
-          </h2>
-
-          <LifeWheel scores={result.scores} />
-
-          <div className="quick-wins">
-            <h3>Your five quick wins</h3>
-
-            {result.quickWins.map((win, index) => (
-              <div className="quick-win" key={`${win}-${index}`}>
-                <span>{index + 1}</span>
-                <p>{win}</p>
-              </div>
-            ))}
-          </div>
-
-          <button onClick={() => setStep("conversation")}>
-            Continue the conversation
-          </button>
-        </section>
+        <ResultsScreen
+          result={result}
+          onboarding={onboarding}
+          onContinue={() => setStep("conversation")}
+        />
       )}
     </main>
+  );
+}
+
+function ResultsScreen({
+  result,
+  onboarding,
+  onContinue,
+}: {
+  result: Result;
+  onboarding: Onboarding;
+  onContinue: () => void;
+}) {
+  const overallScore = calculateAverage(result.scores);
+  const priorityZone = getLowestZone(result.scores);
+  const priorityScore = clampScore(result.scores[priorityZone.label]);
+  const priorityStatus = getScoreStatus(priorityScore);
+  const priorityColour = getScoreColour(priorityScore);
+
+  return (
+    <section className="card wheel-card results-card">
+      <p className="eyebrow">Your Life Audit</p>
+
+      <h2>
+        {onboarding.name
+          ? `Here’s the first clear picture, ${onboarding.name}.`
+          : "Here’s the first clear picture."}
+      </h2>
+
+      <div className="results-summary">
+        <div className="overall-score">
+          <span>Overall life score</span>
+          <strong style={{ color: getScoreColour(overallScore) }}>
+            {overallScore}/100
+          </strong>
+          <p>
+            This is not a judgement. It is simply a snapshot of where life feels
+            strong, strained, or ready for attention.
+          </p>
+        </div>
+
+        <div className="priority-card" style={{ borderColor: priorityColour }}>
+          <span>Priority focus</span>
+          <strong>
+            {priorityZone.icon} {priorityZone.label}
+          </strong>
+          <em style={{ color: priorityColour }}>{priorityScore}/100</em>
+          <p>{priorityStatus.message}</p>
+        </div>
+      </div>
+
+      <LifeWheel scores={result.scores} />
+
+      <div className="quick-wins upgraded-quick-wins">
+        <h3>Your five quick wins</h3>
+        <p className="quick-wins-intro">
+          Start here. These are deliberately small, practical actions designed
+          to create movement without overwhelming you.
+        </p>
+
+        {result.quickWins.map((win, index) => (
+          <div className="quick-win" key={`${win}-${index}`}>
+            <span>{index + 1}</span>
+            <p>{win}</p>
+          </div>
+        ))}
+      </div>
+
+      <div className="premium-unlock">
+        <p className="eyebrow">Premium coming soon</p>
+        <h3>Turn this into a 30-day action plan</h3>
+        <p>
+          Premium will save your scores, track monthly progress, create deeper
+          action plans and add guided voice reflections.
+        </p>
+
+        <div className="premium-actions">
+          <input placeholder="Email address" type="email" />
+          <button>Join the waitlist</button>
+        </div>
+      </div>
+
+      <button onClick={onContinue}>Continue the conversation</button>
+    </section>
   );
 }
 
