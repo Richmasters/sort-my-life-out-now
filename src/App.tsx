@@ -1,7 +1,13 @@
 import { useEffect, useRef, useState } from "react";
 import "./App.css";
 
-type Step = "landing" | "onboarding" | "conversation" | "analysing" | "wheel";
+type Step =
+  | "landing"
+  | "onboarding"
+  | "conversation"
+  | "analysing"
+  | "wheel"
+  | "actionPlan";
 
 type Message = {
   role: "assistant" | "user";
@@ -20,6 +26,17 @@ type Result = {
   scores: Record<string, number>;
   insights?: Record<string, string>;
   quickWins: string[];
+};
+
+type ActionPlan = {
+  title: string;
+  summary: string;
+  weeks: {
+    week: number;
+    theme: string;
+    focus: string;
+    actions: string[];
+  }[];
 };
 
 type Zone = {
@@ -49,22 +66,72 @@ const fallbackResult: Result = {
     "Life Admin": 31,
     Purpose: 44,
   },
-insights: {
-  Mind: "Your mind looks like it may be carrying a lot at once. The first win here is not to solve everything, but to reduce the noise.",
-  Body: "Your body may not be the main problem, but it still affects how much capacity you have. Small routines could help stabilise everything else.",
-  Money: "Money looks like one of the pressure points. Getting visibility on what is coming in and going out could create quick relief.",
-  Work: "Work appears to be taking up mental space. A clearer boundary or priority list may help reduce the sense of being dragged around by it.",
-  Love: "This looks like one of the steadier areas. It may be worth leaning on safe relationships rather than trying to carry everything alone.",
-  Home: "Home seems functional but could probably feel calmer. Small improvements to your environment may help your head feel clearer.",
-  "Life Admin": "Life admin looks like it may be adding background stress. One short, focused admin session could make things feel less chaotic.",
-  Purpose: "Purpose seems a little unclear right now. That is normal when life is noisy — clarity often returns after the pressure reduces.",
-},
+  insights: {
+    Mind: "Your mind looks like it may be carrying a lot at once. The first win here is not to solve everything, but to reduce the noise.",
+    Body: "Your body may not be the main problem, but it still affects how much capacity you have. Small routines could help stabilise everything else.",
+    Money: "Money looks like one of the pressure points. Getting visibility on what is coming in and going out could create quick relief.",
+    Work: "Work appears to be taking up mental space. A clearer boundary or priority list may help reduce the sense of being dragged around by it.",
+    Love: "This looks like one of the steadier areas. It may be worth leaning on safe relationships rather than trying to carry everything alone.",
+    Home: "Home seems functional but could probably feel calmer. Small improvements to your environment may help your head feel clearer.",
+    "Life Admin":
+      "Life admin looks like it may be adding background stress. One short, focused admin session could make things feel less chaotic.",
+    Purpose:
+      "Purpose seems a little unclear right now. That is normal when life is noisy — clarity often returns after the pressure reduces.",
+  },
   quickWins: [
     "Choose one small life-admin task and finish it today.",
     "Take a 10-minute walk before trying to solve everything.",
     "Write down the three things causing the most pressure.",
     "Send one honest message to someone you trust.",
     "Pick tomorrow’s first task before bed tonight.",
+  ],
+};
+
+const fallbackActionPlan: ActionPlan = {
+  title: "Your 30-day reset plan",
+  summary:
+    "A simple, steady plan to reduce pressure and create movement without overwhelming you.",
+  weeks: [
+    {
+      week: 1,
+      theme: "Stabilise",
+      focus: "Reduce noise and create breathing room.",
+      actions: [
+        "Write down the three areas causing the most pressure.",
+        "Choose one small task you can finish today.",
+        "Take one 10-minute walk without your phone.",
+      ],
+    },
+    {
+      week: 2,
+      theme: "Clear pressure",
+      focus: "Deal with the most obvious sources of stress.",
+      actions: [
+        "Tackle one life-admin task.",
+        "Review one recurring payment or commitment.",
+        "Have one honest conversation you have been avoiding.",
+      ],
+    },
+    {
+      week: 3,
+      theme: "Build rhythm",
+      focus: "Create repeatable habits that support you.",
+      actions: [
+        "Pick a simple morning or evening routine.",
+        "Block one weekly reset slot in your calendar.",
+        "Choose one boundary that protects your energy.",
+      ],
+    },
+    {
+      week: 4,
+      theme: "Review and refine",
+      focus: "Notice what changed and decide what comes next.",
+      actions: [
+        "Repeat your Wheel of Life audit.",
+        "Keep what worked and drop what felt unrealistic.",
+        "Choose one focus area for the next month.",
+      ],
+    },
   ],
 };
 
@@ -110,6 +177,27 @@ function clampScore(value: number | undefined) {
   return Math.max(0, Math.min(100, Math.round(value)));
 }
 
+function calculateAverage(scores: Record<string, number>) {
+  const values = zones.map((zone) => clampScore(scores[zone.label]));
+  return Math.round(
+    values.reduce((total, score) => total + score, 0) / values.length
+  );
+}
+
+function getLowestZone(scores: Record<string, number>) {
+  return zones.reduce((lowest, zone) => {
+    const score = clampScore(scores[zone.label]);
+    const lowestScore = clampScore(scores[lowest.label]);
+    return score < lowestScore ? zone : lowest;
+  }, zones[0]);
+}
+
+function getFocusOrder(scores: Record<string, number>) {
+  return [...zones].sort(
+    (a, b) => clampScore(scores[a.label]) - clampScore(scores[b.label])
+  );
+}
+
 function polar(centerX: number, centerY: number, radius: number, angle: number) {
   const radians = (angle * Math.PI) / 180;
   return {
@@ -139,29 +227,13 @@ function segmentPath(
   ].join(" ");
 }
 
-function calculateAverage(scores: Record<string, number>) {
-  const values = zones.map((zone) => clampScore(scores[zone.label]));
-  return Math.round(values.reduce((total, score) => total + score, 0) / values.length);
-}
-
-function getLowestZone(scores: Record<string, number>) {
-  return zones.reduce((lowest, zone) => {
-    const score = clampScore(scores[zone.label]);
-    const lowestScore = clampScore(scores[lowest.label]);
-    return score < lowestScore ? zone : lowest;
-  }, zones[0]);
-}
-function getFocusOrder(scores: Record<string, number>) {
-  return [...zones].sort(
-    (a, b) => clampScore(scores[a.label]) - clampScore(scores[b.label])
-  );
-}
-
 export default function App() {
   const [step, setStep] = useState<Step>("landing");
   const [message, setMessage] = useState("");
   const [isThinking, setIsThinking] = useState(false);
   const [result, setResult] = useState<Result | null>(null);
+  const [actionPlan, setActionPlan] = useState<ActionPlan | null>(null);
+  const [isGeneratingPlan, setIsGeneratingPlan] = useState(false);
 
   const [onboarding, setOnboarding] = useState<Onboarding>({
     name: "",
@@ -277,6 +349,36 @@ Use this naturally. Do not list it back mechanically.
     }
   }
 
+  async function generateActionPlan() {
+    if (!result) return;
+
+    setIsGeneratingPlan(true);
+
+    try {
+      const response = await fetch("/.netlify/functions/action-plan", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          onboarding,
+          result,
+          messages,
+        }),
+      });
+
+      const text = await response.text();
+      const cleaned = text.replace(/```json|```/g, "").trim();
+      const parsed = JSON.parse(cleaned);
+
+      setActionPlan(parsed);
+      setStep("actionPlan");
+    } catch {
+      setActionPlan(fallbackActionPlan);
+      setStep("actionPlan");
+    } finally {
+      setIsGeneratingPlan(false);
+    }
+  }
+
   const canReveal = messages.filter((m) => m.role === "user").length >= 3;
 
   return (
@@ -358,8 +460,8 @@ Use this naturally. Do not list it back mechanically.
               What should we call you?
               <input
                 value={onboarding.name}
-                onChange={(e) =>
-                  setOnboarding({ ...onboarding, name: e.target.value })
+                onChange={(event) =>
+                  setOnboarding({ ...onboarding, name: event.target.value })
                 }
                 placeholder="Your first name"
               />
@@ -369,8 +471,11 @@ Use this naturally. Do not list it back mechanically.
               Age range
               <select
                 value={onboarding.ageRange}
-                onChange={(e) =>
-                  setOnboarding({ ...onboarding, ageRange: e.target.value })
+                onChange={(event) =>
+                  setOnboarding({
+                    ...onboarding,
+                    ageRange: event.target.value,
+                  })
                 }
               >
                 <option>18–24</option>
@@ -386,10 +491,10 @@ Use this naturally. Do not list it back mechanically.
               How does life feel right now?
               <select
                 value={onboarding.currentFeeling}
-                onChange={(e) =>
+                onChange={(event) =>
                   setOnboarding({
                     ...onboarding,
-                    currentFeeling: e.target.value,
+                    currentFeeling: event.target.value,
                   })
                 }
               >
@@ -405,10 +510,10 @@ Use this naturally. Do not list it back mechanically.
               Biggest pressure area
               <select
                 value={onboarding.pressureArea}
-                onChange={(e) =>
+                onChange={(event) =>
                   setOnboarding({
                     ...onboarding,
-                    pressureArea: e.target.value,
+                    pressureArea: event.target.value,
                   })
                 }
               >
@@ -427,10 +532,10 @@ Use this naturally. Do not list it back mechanically.
               What would you like help with?
               <textarea
                 value={onboarding.helpWanted}
-                onChange={(e) =>
+                onChange={(event) =>
                   setOnboarding({
                     ...onboarding,
-                    helpWanted: e.target.value,
+                    helpWanted: event.target.value,
                   })
                 }
                 placeholder="A sentence or two is enough..."
@@ -456,7 +561,7 @@ Use this naturally. Do not list it back mechanically.
 
           <div className="messages">
             {messages.map((item, index) => (
-              <div key={index} className={`message ${item.role}`}>
+              <div key={`${item.role}-${index}`} className={`message ${item.role}`}>
                 {item.text}
               </div>
             ))}
@@ -518,7 +623,37 @@ Use this naturally. Do not list it back mechanically.
           result={result}
           onboarding={onboarding}
           onContinue={() => setStep("conversation")}
+          onGeneratePlan={generateActionPlan}
+          isGeneratingPlan={isGeneratingPlan}
         />
+      )}
+
+      {step === "actionPlan" && actionPlan && (
+        <section className="card results-card">
+          <p className="eyebrow">Your 30-day plan</p>
+
+          <h2>{actionPlan.title}</h2>
+
+          <p className="intro">{actionPlan.summary}</p>
+
+          <div className="plan-weeks">
+            {actionPlan.weeks.map((week) => (
+              <div className="plan-week" key={week.week}>
+                <span>Week {week.week}</span>
+                <h3>{week.theme}</h3>
+                <p>{week.focus}</p>
+
+                <ul>
+                  {week.actions.map((action) => (
+                    <li key={action}>{action}</li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </div>
+
+          <button onClick={() => setStep("wheel")}>Back to results</button>
+        </section>
       )}
     </main>
   );
@@ -528,17 +663,21 @@ function ResultsScreen({
   result,
   onboarding,
   onContinue,
+  onGeneratePlan,
+  isGeneratingPlan,
 }: {
   result: Result;
   onboarding: Onboarding;
   onContinue: () => void;
+  onGeneratePlan: () => void;
+  isGeneratingPlan: boolean;
 }) {
   const overallScore = calculateAverage(result.scores);
   const priorityZone = getLowestZone(result.scores);
   const priorityScore = clampScore(result.scores[priorityZone.label]);
   const priorityStatus = getScoreStatus(priorityScore);
   const priorityColour = getScoreColour(priorityScore);
-const focusOrder = getFocusOrder(result.scores);
+  const focusOrder = getFocusOrder(result.scores);
 
   return (
     <section className="card wheel-card results-card">
@@ -573,40 +712,41 @@ const focusOrder = getFocusOrder(result.scores);
       </div>
 
       <LifeWheel scores={result.scores} insights={result.insights} />
-<div className="focus-order">
-  <div>
-    <p className="eyebrow">Your focus order</p>
-    <h3>Where to start first</h3>
-    <p>
-      Start with the lowest scores first. These are the areas most likely to
-      create relief if you give them gentle, focused attention.
-    </p>
-  </div>
 
-  <div className="focus-list">
-    {focusOrder.map((zone, index) => {
-      const score = clampScore(result.scores[zone.label]);
-      const status = getScoreStatus(score);
-      const colour = getScoreColour(score);
+      <div className="focus-order">
+        <div>
+          <p className="eyebrow">Your focus order</p>
+          <h3>Where to start first</h3>
+          <p>
+            Start with the lowest scores first. These are the areas most likely
+            to create relief if you give them gentle, focused attention.
+          </p>
+        </div>
 
-      return (
-        <button
-          type="button"
-          className="focus-item"
-          key={zone.label}
-          style={{ borderColor: colour }}
-        >
-          <span>{index + 1}</span>
-          <strong>
-            {zone.icon} {zone.label}
-          </strong>
-          <em style={{ color: colour }}>{score}/100</em>
-          <small>{status.label}</small>
-        </button>
-      );
-    })}
-  </div>
-</div>
+        <div className="focus-list">
+          {focusOrder.map((zone, index) => {
+            const score = clampScore(result.scores[zone.label]);
+            const status = getScoreStatus(score);
+            const colour = getScoreColour(score);
+
+            return (
+              <button
+                type="button"
+                className="focus-item"
+                key={zone.label}
+                style={{ borderColor: colour }}
+              >
+                <span>{index + 1}</span>
+                <strong>
+                  {zone.icon} {zone.label}
+                </strong>
+                <em style={{ color: colour }}>{score}/100</em>
+                <small>{status.label}</small>
+              </button>
+            );
+          })}
+        </div>
+      </div>
 
       <div className="quick-wins upgraded-quick-wins">
         <h3>Your five quick wins</h3>
@@ -624,16 +764,21 @@ const focusOrder = getFocusOrder(result.scores);
       </div>
 
       <div className="premium-unlock">
-        <p className="eyebrow">Premium coming soon</p>
+        <p className="eyebrow">Premium preview</p>
         <h3>Turn this into a 30-day action plan</h3>
         <p>
-          Premium will save your scores, track monthly progress, create deeper
-          action plans and add guided voice reflections.
+          Generate a personalised month-long reset plan based on your scores,
+          conversation and quick wins.
         </p>
 
         <div className="premium-actions">
-          <input placeholder="Email address" type="email" />
-          <button>Join the waitlist</button>
+          <button
+            type="button"
+            onClick={onGeneratePlan}
+            disabled={isGeneratingPlan}
+          >
+            {isGeneratingPlan ? "Building your plan..." : "Generate 30-day plan"}
+          </button>
         </div>
       </div>
 
@@ -660,9 +805,9 @@ function LifeWheel({
   const activeScore = clampScore(scores[active.label]);
   const activeStatus = getScoreStatus(activeScore);
   const activeColour = getScoreColour(activeScore);
-const activeInsight =
-  insights?.[active.label] ||
-  "This area is part of your current life picture. The score is not a judgement — it is a starting point for clearer action.";
+  const activeInsight =
+    insights?.[active.label] ||
+    "This area is part of your current life picture. The score is not a judgement — it is a starting point for clearer action.";
 
   return (
     <div className="life-wheel-wrap">
