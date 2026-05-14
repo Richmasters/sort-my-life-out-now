@@ -1,6 +1,6 @@
 export async function handler(event: any) {
   try {
-    const { messages } = JSON.parse(event.body);
+    const { messages } = JSON.parse(event.body || "{}");
 
     const response = await fetch("https://api.deepseek.com/chat/completions", {
       method: "POST",
@@ -10,27 +10,42 @@ export async function handler(event: any) {
       },
       body: JSON.stringify({
         model: "deepseek-chat",
-        temperature: 0.3,
+        temperature: 0.25,
         messages: [
           {
             role: "system",
             content: `
-You are analysing a conversation to produce a structured "Wheel of Life" result.
+You are analysing a user's life audit conversation.
 
-Return ONLY valid JSON. No explanation.
+Return ONLY valid JSON. No markdown. No explanation. No code block.
 
-The structure must be:
+You must score each life area from 0 to 100.
+
+Important scoring rules:
+- Do NOT score from 1 to 10.
+- Do NOT use only round tens.
+- Use nuanced scores such as 17, 28, 43, 56, 71, 84.
+- 0 means this area is completely depleted or absent.
+- 100 means this area is exceptionally strong.
+- Most real scores should fall somewhere between 15 and 85.
+
+Colour meaning used by the app:
+- 0 to 33 = red / needs attention
+- 34 to 67 = amber / developing
+- 68 to 100 = green / strong
+
+Return exactly this JSON shape:
 
 {
   "scores": {
-    "Mind": number (1-10),
-    "Body": number (1-10),
-    "Money": number (1-10),
-    "Work": number (1-10),
-    "Love": number (1-10),
-    "Home": number (1-10),
-    "Life Admin": number (1-10),
-    "Purpose": number (1-10)
+    "Mind": 0-100,
+    "Body": 0-100,
+    "Money": 0-100,
+    "Work": 0-100,
+    "Love": 0-100,
+    "Home": 0-100,
+    "Life Admin": 0-100,
+    "Purpose": 0-100
   },
   "quickWins": [
     "short practical action",
@@ -41,12 +56,12 @@ The structure must be:
   ]
 }
 
-Rules:
-- Scores must reflect what the user said
-- If unsure, estimate intelligently
-- Quick wins must be practical, specific, and easy to act on
-- No generic advice
-- No explanation outside JSON
+Quick wins must be:
+- specific
+- practical
+- small enough to do soon
+- based on what the user actually shared
+- not generic wellness advice
             `,
           },
           ...messages,
@@ -55,12 +70,11 @@ Rules:
     });
 
     const data = await response.json();
-
-    const content = data.choices?.[0]?.message?.content;
+    const content = data?.choices?.[0]?.message?.content;
 
     return {
       statusCode: 200,
-      body: content,
+      body: content || JSON.stringify({ error: "No analysis returned" }),
     };
   } catch {
     return {
