@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useEffect, useRef, useState } from "react";
 import "./App.css";
 
 type Step = "landing" | "onboarding" | "conversation" | "analysing" | "wheel";
@@ -34,97 +34,6 @@ const fallbackResult: Result = {
 };
 
 export default function App() {
-  function LifeWheel({ scores }: { scores: Record<string, number> }) {
-  const zones = [
-    { label: "Mind", icon: "🧠" },
-    { label: "Body", icon: "💪" },
-    { label: "Money", icon: "💰" },
-    { label: "Work", icon: "💼" },
-    { label: "Love", icon: "❤️" },
-    { label: "Home", icon: "🏠" },
-    { label: "Life Admin", icon: "🗂️" },
-    { label: "Purpose", icon: "🌟" },
-  ];
-
-  const center = 160;
-  const maxRadius = 110;
-
-  const points = zones
-    .map((zone, index) => {
-      const score = Math.max(1, Math.min(10, scores[zone.label] || 5));
-      const angle = -90 + index * 45;
-      const radius = (score / 10) * maxRadius;
-      const x = center + radius * Math.cos((angle * Math.PI) / 180);
-      const y = center + radius * Math.sin((angle * Math.PI) / 180);
-      return `${x},${y}`;
-    })
-    .join(" ");
-
-  return (
-    <div className="life-wheel-wrap">
-      <svg viewBox="0 0 320 320" className="life-wheel">
-        {[2, 4, 6, 8, 10].map((ring) => (
-          <circle
-            key={ring}
-            cx={center}
-            cy={center}
-            r={(ring / 10) * maxRadius}
-            className="wheel-ring"
-          />
-        ))}
-
-        {zones.map((zone, index) => {
-          const angle = -90 + index * 45;
-          const outerX = center + maxRadius * Math.cos((angle * Math.PI) / 180);
-          const outerY = center + maxRadius * Math.sin((angle * Math.PI) / 180);
-          const labelX =
-            center + 138 * Math.cos((angle * Math.PI) / 180);
-          const labelY =
-            center + 138 * Math.sin((angle * Math.PI) / 180);
-
-          return (
-            <g key={zone.label}>
-              <line
-                x1={center}
-                y1={center}
-                x2={outerX}
-                y2={outerY}
-                className="wheel-axis"
-              />
-              <text x={labelX} y={labelY - 5} textAnchor="middle" className="wheel-icon">
-                {zone.icon}
-              </text>
-              <text x={labelX} y={labelY + 12} textAnchor="middle" className="wheel-label">
-                {zone.label}
-              </text>
-            </g>
-          );
-        })}
-
-        <polygon points={points} className="wheel-shape" />
-
-        {zones.map((zone, index) => {
-          const score = Math.max(1, Math.min(10, scores[zone.label] || 5));
-          const angle = -90 + index * 45;
-          const radius = (score / 10) * maxRadius;
-          const x = center + radius * Math.cos((angle * Math.PI) / 180);
-          const y = center + radius * Math.sin((angle * Math.PI) / 180);
-
-          return <circle key={zone.label} cx={x} cy={y} r="4.5" className="wheel-point" />;
-        })}
-      </svg>
-
-      <div className="wheel-score-list">
-        {zones.map((zone) => (
-          <div key={zone.label}>
-            <span>{zone.icon} {zone.label}</span>
-            <strong>{scores[zone.label] || 5}/10</strong>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
   const [step, setStep] = useState<Step>("landing");
   const [message, setMessage] = useState("");
   const [isThinking, setIsThinking] = useState(false);
@@ -207,8 +116,8 @@ export default function App() {
 
       const text = await response.text();
       const cleaned = text.replace(/```json|```/g, "").trim();
-
       const parsed = JSON.parse(cleaned);
+
       setResult(parsed);
       setStep("wheel");
     } catch {
@@ -224,16 +133,13 @@ export default function App() {
       {step === "landing" && (
         <section className="card hero">
           <p className="eyebrow">Your Life Audit</p>
-
           <h1>
             Sort My Life Out <em>Now</em>
           </h1>
-
           <p className="intro">
             A calm, intelligent conversation that helps you understand what is
             actually going on in your life — and what to do next.
           </p>
-
           <button onClick={() => setStep("onboarding")}>
             Start your life audit
           </button>
@@ -242,75 +148,19 @@ export default function App() {
 
       {step === "onboarding" && (
         <section className="card">
-          <p className="eyebrow">First, a little context</p>
-
           <h2>Let’s get a feel for where you are.</h2>
-
-          <form>
-            <label>
-              What should we call you?
-              <input placeholder="Your first name" />
-            </label>
-
-            <label>
-              Age range
-              <select>
-                <option>18–24</option>
-                <option>25–34</option>
-                <option>35–44</option>
-                <option>45–54</option>
-                <option>55–64</option>
-                <option>65+</option>
-              </select>
-            </label>
-
-            <label>
-              How does life feel right now?
-              <select>
-                <option>Overwhelming</option>
-                <option>Stuck</option>
-                <option>Busy but okay</option>
-                <option>Changing</option>
-                <option>Mostly good, but could be better</option>
-              </select>
-            </label>
-
-            <label>
-              Biggest pressure area
-              <select>
-                <option>Mind</option>
-                <option>Body</option>
-                <option>Money</option>
-                <option>Work</option>
-                <option>Love</option>
-                <option>Home</option>
-                <option>Life admin</option>
-                <option>Purpose</option>
-              </select>
-            </label>
-
-            <label>
-              What would you like help with?
-              <textarea placeholder="A sentence or two is enough..." />
-            </label>
-
-            <button type="button" onClick={() => setStep("conversation")}>
-              Continue to conversation
-            </button>
-          </form>
+          <button onClick={() => setStep("conversation")}>
+            Continue
+          </button>
         </section>
       )}
 
       {step === "conversation" && (
         <section className="card chat-card">
-          <p className="eyebrow">Your conversation</p>
-
-          <h2>Let’s sort through this properly.</h2>
-
           <div className="messages">
-            {messages.map((item, index) => (
-              <div key={index} className={`message ${item.role}`}>
-                {item.text}
+            {messages.map((m, i) => (
+              <div key={i} className={`message ${m.role}`}>
+                {m.text}
               </div>
             ))}
 
@@ -326,69 +176,77 @@ export default function App() {
           </div>
 
           {canReveal && (
-            <button className="reveal-button" onClick={analyseLife}>
+            <button onClick={analyseLife}>
               Reveal my Wheel of Life
             </button>
           )}
 
-          <div className="chat-input">
-            <textarea
-              value={message}
-              disabled={isThinking}
-              onChange={(event) => setMessage(event.target.value)}
-              placeholder={
-                isThinking ? "Thinking..." : "Type what’s on your mind..."
-              }
-            />
+          <textarea
+            value={message}
+            onChange={(e) => setMessage(e.target.value)}
+          />
 
-            <button type="button" onClick={sendMessage} disabled={isThinking}>
-              {isThinking ? "Thinking" : "Send"}
-            </button>
-          </div>
+          <button onClick={sendMessage} disabled={isThinking}>
+            {isThinking ? "Thinking..." : "Send"}
+          </button>
         </section>
       )}
 
       {step === "analysing" && (
         <section className="card hero">
-          <p className="eyebrow">Analysing your life</p>
-          <h2>Building your first clear picture...</h2>
-
-          <div className="message assistant typing analysing-dots">
-            <span></span>
-            <span></span>
-            <span></span>
-          </div>
-
-          <p className="intro">
-            I’m looking for patterns across your mind, body, money, work,
-            relationships, home, life admin and purpose.
-          </p>
+          <h2>Analysing your life...</h2>
         </section>
       )}
 
       {step === "wheel" && result && (
-        <section className="card wheel-card">
-          <p className="eyebrow">Your Life Audit</p>
-          <h2>Here’s the first clear picture.</h2>
+        <section className="card">
+          <h2>Your Wheel of Life</h2>
 
           <LifeWheel scores={result.scores} />
 
-          <div className="quick-wins">
-            <h3>Your five quick wins</h3>
-
-            {result.quickWins.map((win, index) => (
-              <div className="quick-win" key={win}>
-                <span>{index + 1}</span>
-                <p>{win}</p>
-              </div>
-            ))}
-          </div>
-
-          <button onClick={() => setStep("conversation")}>
-            Continue the conversation
-          </button>
+          <h3>Quick wins</h3>
+          {result.quickWins.map((w, i) => (
+            <p key={i}>{w}</p>
+          ))}
         </section>
       )}
     </main>
+  );
+}
+
+function LifeWheel({ scores }: { scores: Record<string, number> }) {
+  
+
+  const zones = [
+    { label: "Mind", icon: "🧠", color: "#8B5CF6" },
+    { label: "Body", icon: "💪", color: "#16A34A" },
+    { label: "Money", icon: "💰", color: "#D97706" },
+    { label: "Work", icon: "💼", color: "#2563EB" },
+    { label: "Love", icon: "❤️", color: "#E11D48" },
+    { label: "Home", icon: "🏠", color: "#0D9488" },
+    { label: "Life Admin", icon: "🗂️", color: "#7C3AED" },
+    { label: "Purpose", icon: "🌟", color: "#C47C4E" },
+  ];
+
+  const center = 160;
+  const maxRadius = 110;
+
+  const points = zones
+    .map((zone, index) => {
+      const score = Math.max(1, Math.min(10, scores[zone.label] || 5));
+      const angle = -90 + index * 45;
+      const radius = (score / 10) * maxRadius;
+      const x = center + radius * Math.cos((angle * Math.PI) / 180);
+      const y = center + radius * Math.sin((angle * Math.PI) / 180);
+      return `${x},${y}`;
+    })
+    .join(" ");
+
+  return (
+    <div>
+      <svg viewBox="0 0 320 320" style={{ width: "100%" }}>
+        <polygon points={points} fill="rgba(196,124,78,0.3)" />
+      </svg>
+    </div>
   );
 }
