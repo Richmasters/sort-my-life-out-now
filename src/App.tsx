@@ -8,6 +8,14 @@ type Message = {
   text: string;
 };
 
+type Onboarding = {
+  name: string;
+  ageRange: string;
+  currentFeeling: string;
+  pressureArea: string;
+  helpWanted: string;
+};
+
 type Result = {
   scores: Record<string, number>;
   quickWins: string[];
@@ -39,6 +47,14 @@ export default function App() {
   const [isThinking, setIsThinking] = useState(false);
   const [result, setResult] = useState<Result | null>(null);
 
+  const [onboarding, setOnboarding] = useState<Onboarding>({
+    name: "",
+    ageRange: "35–44",
+    currentFeeling: "Overwhelming",
+    pressureArea: "Mind",
+    helpWanted: "",
+  });
+
   const [messages, setMessages] = useState<Message[]>([
     {
       role: "assistant",
@@ -51,6 +67,19 @@ export default function App() {
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, isThinking]);
+
+  function onboardingContext() {
+    return `
+User context from onboarding:
+Name: ${onboarding.name || "Not given"}
+Age range: ${onboarding.ageRange}
+Current feeling: ${onboarding.currentFeeling}
+Biggest pressure area: ${onboarding.pressureArea}
+What they want help with: ${onboarding.helpWanted || "Not given"}
+
+Use this context naturally. Do not list it back mechanically.
+    `.trim();
+  }
 
   async function sendMessage() {
     if (!message.trim() || isThinking) return;
@@ -69,10 +98,13 @@ export default function App() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          messages: updatedMessages.map((m) => ({
-            role: m.role,
-            content: m.text,
-          })),
+          messages: [
+            { role: "user", content: onboardingContext() },
+            ...updatedMessages.map((m) => ({
+              role: m.role,
+              content: m.text,
+            })),
+          ],
         }),
       });
 
@@ -107,10 +139,13 @@ export default function App() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          messages: messages.map((m) => ({
-            role: m.role,
-            content: m.text,
-          })),
+          messages: [
+            { role: "user", content: onboardingContext() },
+            ...messages.map((m) => ({
+              role: m.role,
+              content: m.text,
+            })),
+          ],
         }),
       });
 
@@ -133,13 +168,16 @@ export default function App() {
       {step === "landing" && (
         <section className="card hero">
           <p className="eyebrow">Your Life Audit</p>
+
           <h1>
             Sort My Life Out <em>Now</em>
           </h1>
+
           <p className="intro">
             A calm, intelligent conversation that helps you understand what is
             actually going on in your life — and what to do next.
           </p>
+
           <button onClick={() => setStep("onboarding")}>
             Start your life audit
           </button>
@@ -148,19 +186,115 @@ export default function App() {
 
       {step === "onboarding" && (
         <section className="card">
+          <p className="eyebrow">First, a little context</p>
+
           <h2>Let’s get a feel for where you are.</h2>
-          <button onClick={() => setStep("conversation")}>
-            Continue
-          </button>
+
+          <form>
+            <label>
+              What should we call you?
+              <input
+                value={onboarding.name}
+                onChange={(e) =>
+                  setOnboarding({ ...onboarding, name: e.target.value })
+                }
+                placeholder="Your first name"
+              />
+            </label>
+
+            <label>
+              Age range
+              <select
+                value={onboarding.ageRange}
+                onChange={(e) =>
+                  setOnboarding({ ...onboarding, ageRange: e.target.value })
+                }
+              >
+                <option>18–24</option>
+                <option>25–34</option>
+                <option>35–44</option>
+                <option>45–54</option>
+                <option>55–64</option>
+                <option>65+</option>
+              </select>
+            </label>
+
+            <label>
+              How does life feel right now?
+              <select
+                value={onboarding.currentFeeling}
+                onChange={(e) =>
+                  setOnboarding({
+                    ...onboarding,
+                    currentFeeling: e.target.value,
+                  })
+                }
+              >
+                <option>Overwhelming</option>
+                <option>Stuck</option>
+                <option>Busy but okay</option>
+                <option>Changing</option>
+                <option>Mostly good, but could be better</option>
+              </select>
+            </label>
+
+            <label>
+              Biggest pressure area
+              <select
+                value={onboarding.pressureArea}
+                onChange={(e) =>
+                  setOnboarding({
+                    ...onboarding,
+                    pressureArea: e.target.value,
+                  })
+                }
+              >
+                <option>Mind</option>
+                <option>Body</option>
+                <option>Money</option>
+                <option>Work</option>
+                <option>Love</option>
+                <option>Home</option>
+                <option>Life Admin</option>
+                <option>Purpose</option>
+              </select>
+            </label>
+
+            <label>
+              What would you like help with?
+              <textarea
+                value={onboarding.helpWanted}
+                onChange={(e) =>
+                  setOnboarding({
+                    ...onboarding,
+                    helpWanted: e.target.value,
+                  })
+                }
+                placeholder="A sentence or two is enough..."
+              />
+            </label>
+
+            <button type="button" onClick={() => setStep("conversation")}>
+              Continue to conversation
+            </button>
+          </form>
         </section>
       )}
 
       {step === "conversation" && (
         <section className="card chat-card">
+          <p className="eyebrow">Your conversation</p>
+
+          <h2>
+            {onboarding.name
+              ? `Let’s sort through this properly, ${onboarding.name}.`
+              : "Let’s sort through this properly."}
+          </h2>
+
           <div className="messages">
-            {messages.map((m, i) => (
-              <div key={i} className={`message ${m.role}`}>
-                {m.text}
+            {messages.map((item, index) => (
+              <div key={index} className={`message ${item.role}`}>
+                {item.text}
               </div>
             ))}
 
@@ -176,38 +310,72 @@ export default function App() {
           </div>
 
           {canReveal && (
-            <button onClick={analyseLife}>
+            <button className="reveal-button" onClick={analyseLife}>
               Reveal my Wheel of Life
             </button>
           )}
 
-          <textarea
-            value={message}
-            onChange={(e) => setMessage(e.target.value)}
-          />
+          <div className="chat-input">
+            <textarea
+              value={message}
+              disabled={isThinking}
+              onChange={(event) => setMessage(event.target.value)}
+              placeholder={
+                isThinking ? "Thinking..." : "Type what’s on your mind..."
+              }
+            />
 
-          <button onClick={sendMessage} disabled={isThinking}>
-            {isThinking ? "Thinking..." : "Send"}
-          </button>
+            <button type="button" onClick={sendMessage} disabled={isThinking}>
+              {isThinking ? "Thinking" : "Send"}
+            </button>
+          </div>
         </section>
       )}
 
       {step === "analysing" && (
         <section className="card hero">
-          <h2>Analysing your life...</h2>
+          <p className="eyebrow">Analysing your life</p>
+          <h2>Building your first clear picture...</h2>
+
+          <div className="message assistant typing analysing-dots">
+            <span></span>
+            <span></span>
+            <span></span>
+          </div>
+
+          <p className="intro">
+            I’m looking for patterns across your mind, body, money, work,
+            relationships, home, life admin and purpose.
+          </p>
         </section>
       )}
 
       {step === "wheel" && result && (
-        <section className="card">
-          <h2>Your Wheel of Life</h2>
+        <section className="card wheel-card">
+          <p className="eyebrow">Your Life Audit</p>
+
+          <h2>
+            {onboarding.name
+              ? `Here’s the first clear picture, ${onboarding.name}.`
+              : "Here’s the first clear picture."}
+          </h2>
 
           <LifeWheel scores={result.scores} />
 
-          <h3>Quick wins</h3>
-          {result.quickWins.map((w, i) => (
-            <p key={i}>{w}</p>
-          ))}
+          <div className="quick-wins">
+            <h3>Your five quick wins</h3>
+
+            {result.quickWins.map((win, index) => (
+              <div className="quick-win" key={`${win}-${index}`}>
+                <span>{index + 1}</span>
+                <p>{win}</p>
+              </div>
+            ))}
+          </div>
+
+          <button onClick={() => setStep("conversation")}>
+            Continue the conversation
+          </button>
         </section>
       )}
     </main>
@@ -265,8 +433,10 @@ function LifeWheel({ scores }: { scores: Record<string, number> }) {
           const axisX = center + maxRadius * Math.cos(radians);
           const axisY = center + maxRadius * Math.sin(radians);
 
-          const pointX = center + ((score / 10) * maxRadius) * Math.cos(radians);
-          const pointY = center + ((score / 10) * maxRadius) * Math.sin(radians);
+          const pointX =
+            center + ((score / 10) * maxRadius) * Math.cos(radians);
+          const pointY =
+            center + ((score / 10) * maxRadius) * Math.sin(radians);
 
           const labelX = center + 165 * Math.cos(radians);
           const labelY = center + 165 * Math.sin(radians);
@@ -293,7 +463,12 @@ function LifeWheel({ scores }: { scores: Record<string, number> }) {
                 className="wheel-point"
               />
 
-              <text x={labelX} y={labelY - 8} textAnchor="middle" className="wheel-icon">
+              <text
+                x={labelX}
+                y={labelY - 8}
+                textAnchor="middle"
+                className="wheel-icon"
+              >
                 {zone.icon}
               </text>
 
@@ -301,12 +476,21 @@ function LifeWheel({ scores }: { scores: Record<string, number> }) {
                 x={labelX}
                 y={labelY + 13}
                 textAnchor="middle"
-                className={activeZone === zone.label ? "wheel-label active" : "wheel-label"}
+                className={
+                  activeZone === zone.label
+                    ? "wheel-label active"
+                    : "wheel-label"
+                }
               >
                 {zone.label}
               </text>
 
-              <text x={labelX} y={labelY + 29} textAnchor="middle" className="wheel-score">
+              <text
+                x={labelX}
+                y={labelY + 29}
+                textAnchor="middle"
+                className="wheel-score"
+              >
                 {score}/10
               </text>
             </g>
@@ -316,7 +500,12 @@ function LifeWheel({ scores }: { scores: Record<string, number> }) {
         <polygon points={points} className="wheel-shape" />
 
         <circle cx={center} cy={center} r="30" className="wheel-centre" />
-        <text x={center} y={center + 5} textAnchor="middle" className="wheel-centre-text">
+        <text
+          x={center}
+          y={center + 5}
+          textAnchor="middle"
+          className="wheel-centre-text"
+        >
           your life
         </text>
       </svg>
