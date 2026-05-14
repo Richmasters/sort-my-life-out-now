@@ -19,62 +19,50 @@ export default function App() {
     },
   ]);
 
-  function sendMessage() {
+  async function sendMessage() {
     if (!message.trim()) return;
 
-    const userMessage: Message = {
-      role: "user",
-      text: message.trim(),
-    };
+    const updatedMessages: Message[] = [
+      ...messages,
+      { role: "user", text: message.trim() },
+    ];
 
-    async function sendMessage() {
-  if (!message.trim()) return;
-
-  const updatedMessages: Message[] = [
-    ...messages,
-    { role: "user", text: message.trim() },
-  ];
-
-  setMessages(updatedMessages);
-  setMessage("");
-
-  try {
-    const response = await fetch("/.netlify/functions/chat", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        messages: updatedMessages.map((m) => ({
-          role: m.role,
-          content: m.text,
-        })),
-      }),
-    });
-
-    const data = await response.json();
-
-    const aiReply =
-      data?.choices?.[0]?.message?.content ||
-      "Something went wrong. Try again.";
-
-    setMessages((current) => [
-      ...current,
-      { role: "assistant", text: aiReply },
-    ]);
-  } catch {
-    setMessages((current) => [
-      ...current,
-      {
-        role: "assistant",
-        text: "I couldn’t connect properly. Try again in a moment.",
-      },
-    ]);
-  }
-}
-
-    setMessages((current) => [...current, userMessage, assistantMessage]);
+    setMessages(updatedMessages);
     setMessage("");
+
+    try {
+      const response = await fetch("/.netlify/functions/chat", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          messages: updatedMessages.map((m) => ({
+            role: m.role,
+            content: m.text,
+          })),
+        }),
+      });
+
+      const data = await response.json();
+
+      const aiReply =
+        data?.choices?.[0]?.message?.content ||
+        "Something went wrong. Try again.";
+
+      setMessages((current) => [
+        ...current,
+        { role: "assistant", text: aiReply },
+      ]);
+    } catch {
+      setMessages((current) => [
+        ...current,
+        {
+          role: "assistant",
+          text: "I couldn’t connect properly. Try again in a moment.",
+        },
+      ]);
+    }
   }
 
   return (
