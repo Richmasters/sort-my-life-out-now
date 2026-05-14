@@ -1,12 +1,31 @@
 import { useState, useRef, useEffect } from "react";
 import "./App.css";
 
-type Step = "landing" | "onboarding" | "conversation";
+type Step = "landing" | "onboarding" | "conversation" | "wheel";
 
 type Message = {
   role: "assistant" | "user";
   text: string;
 };
+
+const wheelScores = [
+  { label: "Mind", icon: "🧠", score: 4 },
+  { label: "Body", icon: "💪", score: 5 },
+  { label: "Money", icon: "💰", score: 3 },
+  { label: "Work", icon: "💼", score: 4 },
+  { label: "Love", icon: "❤️", score: 6 },
+  { label: "Home", icon: "🏠", score: 5 },
+  { label: "Life Admin", icon: "🗂️", score: 3 },
+  { label: "Purpose", icon: "🌟", score: 4 },
+];
+
+const quickWins = [
+  "Choose one life-admin task and finish it today.",
+  "Take a 10-minute walk before making any big decisions.",
+  "Write down every subscription, bill, or recurring payment.",
+  "Send one honest message to someone you trust.",
+  "Pick tomorrow’s first task before you go to bed tonight.",
+];
 
 export default function App() {
   const [step, setStep] = useState<Step>("landing");
@@ -41,9 +60,7 @@ export default function App() {
     try {
       const response = await fetch("/.netlify/functions/chat", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           messages: updatedMessages.map((m) => ({
             role: m.role,
@@ -75,21 +92,20 @@ export default function App() {
     }
   }
 
+  const canRevealWheel = messages.filter((m) => m.role === "user").length >= 3;
+
   return (
     <main className="app">
       {step === "landing" && (
         <section className="card hero">
           <p className="eyebrow">Your Life Audit</p>
-
           <h1>
             Sort My Life Out <em>Now</em>
           </h1>
-
           <p className="intro">
             A calm, intelligent conversation that helps you understand what is
             actually going on in your life — and what to do next.
           </p>
-
           <button onClick={() => setStep("onboarding")}>
             Start your life audit
           </button>
@@ -99,7 +115,6 @@ export default function App() {
       {step === "onboarding" && (
         <section className="card">
           <p className="eyebrow">First, a little context</p>
-
           <h2>Let’s get a feel for where you are.</h2>
 
           <form>
@@ -160,7 +175,6 @@ export default function App() {
       {step === "conversation" && (
         <section className="card chat-card">
           <p className="eyebrow">Your conversation</p>
-
           <h2>Let’s sort through this properly.</h2>
 
           <div className="messages">
@@ -181,22 +195,61 @@ export default function App() {
             <div ref={messagesEndRef} />
           </div>
 
+          {canRevealWheel && (
+            <button className="reveal-button" onClick={() => setStep("wheel")}>
+              Reveal my Wheel of Life
+            </button>
+          )}
+
           <div className="chat-input">
             <textarea
               value={message}
               disabled={isThinking}
               onChange={(event) => setMessage(event.target.value)}
               placeholder={
-                isThinking
-                  ? "Thinking..."
-                  : "Type what’s on your mind..."
+                isThinking ? "Thinking..." : "Type what’s on your mind..."
               }
             />
-
             <button type="button" onClick={sendMessage} disabled={isThinking}>
               {isThinking ? "Thinking" : "Send"}
             </button>
           </div>
+        </section>
+      )}
+
+      {step === "wheel" && (
+        <section className="card wheel-card">
+          <p className="eyebrow">Your Life Audit</p>
+          <h2>Here’s the first clear picture.</h2>
+
+          <div className="wheel-grid">
+            {wheelScores.map((item) => (
+              <div className="score-card" key={item.label}>
+                <div className="score-icon">{item.icon}</div>
+                <div>
+                  <strong>{item.label}</strong>
+                  <div className="score-bar">
+                    <span style={{ width: `${item.score * 10}%` }} />
+                  </div>
+                </div>
+                <em>{item.score}/10</em>
+              </div>
+            ))}
+          </div>
+
+          <div className="quick-wins">
+            <h3>Your five quick wins</h3>
+            {quickWins.map((win, index) => (
+              <div className="quick-win" key={win}>
+                <span>{index + 1}</span>
+                <p>{win}</p>
+              </div>
+            ))}
+          </div>
+
+          <button onClick={() => setStep("conversation")}>
+            Continue the conversation
+          </button>
         </section>
       )}
     </main>
