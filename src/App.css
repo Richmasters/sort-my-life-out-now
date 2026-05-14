@@ -67,13 +67,14 @@ h3 {
 h1 {
   margin: 0 0 28px;
   font-size: clamp(56px, 9vw, 112px);
-  line-height: 0.92;
+  line-height: 1.05;
   font-weight: 400;
 }
 
 h1 em {
-  color: #c47c4e;
   font-style: italic;
+  color: #c47c4e;
+  padding-left: 4px;
 }
 
 h2 {

@@ -257,7 +257,7 @@ Use this naturally. Do not list it back mechanically.
           <p className="eyebrow">Sort My Life Out Now</p>
 
           <h1>
-            A calmer way to understand your <em>whole life</em>.
+            A calmer way to understand your <em>whole life</em>
           </h1>
 
           <p className="intro">
