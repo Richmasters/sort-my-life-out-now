@@ -532,3 +532,53 @@ textarea:disabled {
     grid-template-columns: 1fr;
   }
 }
+.segmented-wheel .wheel-zone {
+  cursor: pointer;
+}
+
+.wheel-slice-bg {
+  fill: rgba(28, 43, 30, 0.055);
+  stroke: #f5f0e8;
+  stroke-width: 3;
+  transition: fill 180ms ease, transform 180ms ease;
+}
+
+.wheel-slice-fill {
+  opacity: 0.72;
+  stroke: #f5f0e8;
+  stroke-width: 3;
+  transition: opacity 180ms ease, transform 180ms ease;
+  animation: wheelReveal 700ms ease both;
+}
+
+.wheel-slice-fill.active {
+  opacity: 0.95;
+}
+
+.wheel-slice-bg.active {
+  fill: rgba(28, 43, 30, 0.095);
+}
+
+.wheel-score-inside {
+  font-size: 15px;
+  font-weight: 900;
+  fill: white;
+  pointer-events: none;
+  paint-order: stroke;
+  stroke: rgba(28, 43, 30, 0.45);
+  stroke-width: 2px;
+}
+
+.segmented-wheel .wheel-label {
+  font-size: 10px;
+}
+
+@media (max-width: 700px) {
+  .segmented-wheel .wheel-label {
+    font-size: 8px;
+  }
+
+  .wheel-score-inside {
+    font-size: 12px;
+  }
+}

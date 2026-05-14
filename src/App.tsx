@@ -21,6 +21,34 @@ type Result = {
   quickWins: string[];
 };
 
+type Zone = {
+  label: string;
+  icon: string;
+  color: string;
+};
+
+const lifeAreas = [
+  "Mind",
+  "Body",
+  "Money",
+  "Work",
+  "Love",
+  "Home",
+  "Life Admin",
+  "Purpose",
+];
+
+const zones: Zone[] = [
+  { label: "Mind", icon: "🧠", color: "#8B5CF6" },
+  { label: "Body", icon: "💪", color: "#16A34A" },
+  { label: "Money", icon: "💰", color: "#D97706" },
+  { label: "Work", icon: "💼", color: "#2563EB" },
+  { label: "Love", icon: "❤️", color: "#E11D48" },
+  { label: "Home", icon: "🏠", color: "#0D9488" },
+  { label: "Life Admin", icon: "🗂️", color: "#7C3AED" },
+  { label: "Purpose", icon: "🌟", color: "#C47C4E" },
+];
+
 const fallbackResult: Result = {
   scores: {
     Mind: 4,
@@ -77,7 +105,7 @@ Current feeling: ${onboarding.currentFeeling}
 Biggest pressure area: ${onboarding.pressureArea}
 What they want help with: ${onboarding.helpWanted || "Not given"}
 
-Use this context naturally. Do not list it back mechanically.
+Use this naturally. Do not list it back mechanically.
     `.trim();
   }
 
@@ -166,21 +194,68 @@ Use this context naturally. Do not list it back mechanically.
   return (
     <main className="app">
       {step === "landing" && (
-        <section className="card hero">
-          <p className="eyebrow">Your Life Audit</p>
+        <section className="card hero landing-card">
+          <p className="eyebrow">Sort My Life Out Now</p>
 
           <h1>
-            Sort My Life Out <em>Now</em>
+            A calmer way to understand your <em>whole life</em>.
           </h1>
 
           <p className="intro">
-            A calm, intelligent conversation that helps you understand what is
-            actually going on in your life — and what to do next.
+            Have a warm, intelligent conversation about what’s really going on.
+            Then get your personal Wheel of Life, five quick wins, and a clearer
+            sense of what to do next.
           </p>
 
-          <button onClick={() => setStep("onboarding")}>
-            Start your life audit
-          </button>
+          <div className="hero-actions">
+            <button onClick={() => setStep("onboarding")}>
+              Start your life audit
+            </button>
+            <span>No judgement. No noise. Just clarity.</span>
+          </div>
+
+          <div className="landing-panels">
+            <div>
+              <strong>1</strong>
+              <h3>Talk it through</h3>
+              <p>
+                Start with a short context check, then speak naturally about
+                what feels heavy, messy, stuck or unclear.
+              </p>
+            </div>
+
+            <div>
+              <strong>2</strong>
+              <h3>Find the pattern</h3>
+              <p>
+                The AI gently looks across your mind, body, money, work, love,
+                home, life admin and purpose.
+              </p>
+            </div>
+
+            <div>
+              <strong>3</strong>
+              <h3>Get your next move</h3>
+              <p>
+                Reveal your Wheel of Life, then leave with five practical quick
+                wins you can actually do.
+              </p>
+            </div>
+          </div>
+
+          <div className="life-area-strip">
+            {lifeAreas.map((area) => (
+              <span key={area}>{area}</span>
+            ))}
+          </div>
+
+          <div className="trust-note">
+            <p>
+              Built to feel private, calm and useful. Free users can explore
+              without creating an account; premium features will add saved
+              progress, monthly check-ins and deeper action plans.
+            </p>
+          </div>
         </section>
       )}
 
@@ -382,64 +457,96 @@ Use this context naturally. Do not list it back mechanically.
   );
 }
 
+function polarToCartesian(
+  centerX: number,
+  centerY: number,
+  radius: number,
+  angleInDegrees: number
+) {
+  const angleInRadians = (angleInDegrees * Math.PI) / 180;
+
+  return {
+    x: centerX + radius * Math.cos(angleInRadians),
+    y: centerY + radius * Math.sin(angleInRadians),
+  };
+}
+
+function describeSegment(
+  center: number,
+  innerRadius: number,
+  outerRadius: number,
+  startAngle: number,
+  endAngle: number
+) {
+  const outerStart = polarToCartesian(center, center, outerRadius, startAngle);
+  const outerEnd = polarToCartesian(center, center, outerRadius, endAngle);
+  const innerEnd = polarToCartesian(center, center, innerRadius, endAngle);
+  const innerStart = polarToCartesian(center, center, innerRadius, startAngle);
+
+  const largeArcFlag = endAngle - startAngle <= 180 ? "0" : "1";
+
+  return [
+    `M ${outerStart.x} ${outerStart.y}`,
+    `A ${outerRadius} ${outerRadius} 0 ${largeArcFlag} 1 ${outerEnd.x} ${outerEnd.y}`,
+    `L ${innerEnd.x} ${innerEnd.y}`,
+    `A ${innerRadius} ${innerRadius} 0 ${largeArcFlag} 0 ${innerStart.x} ${innerStart.y}`,
+    "Z",
+  ].join(" ");
+}
+
 function LifeWheel({ scores }: { scores: Record<string, number> }) {
   const [activeZone, setActiveZone] = useState("Mind");
 
-  const zones = [
-    { label: "Mind", icon: "🧠", color: "#8B5CF6" },
-    { label: "Body", icon: "💪", color: "#16A34A" },
-    { label: "Money", icon: "💰", color: "#D97706" },
-    { label: "Work", icon: "💼", color: "#2563EB" },
-    { label: "Love", icon: "❤️", color: "#E11D48" },
-    { label: "Home", icon: "🏠", color: "#0D9488" },
-    { label: "Life Admin", icon: "🗂️", color: "#7C3AED" },
-    { label: "Purpose", icon: "🌟", color: "#C47C4E" },
-  ];
-
   const center = 200;
-  const maxRadius = 130;
-  const active = zones.find((zone) => zone.label === activeZone) || zones[0];
-  const activeScore = scores[active.label] || 5;
+  const innerRadius = 42;
+  const maxRadius = 145;
+  const segmentGap = 4;
 
-  const points = zones
-    .map((zone, index) => {
-      const score = Math.max(1, Math.min(10, scores[zone.label] || 5));
-      const angle = -90 + index * 45;
-      const radius = (score / 10) * maxRadius;
-      const x = center + radius * Math.cos((angle * Math.PI) / 180);
-      const y = center + radius * Math.sin((angle * Math.PI) / 180);
-      return `${x},${y}`;
-    })
-    .join(" ");
+  const active = zones.find((zone) => zone.label === activeZone) || zones[0];
+  const activeScore = Math.max(1, Math.min(10, scores[active.label] || 5));
 
   return (
     <div className="life-wheel-wrap">
-      <svg viewBox="0 0 400 400" className="life-wheel">
+      <svg viewBox="0 0 400 400" className="life-wheel segmented-wheel">
         {[2, 4, 6, 8, 10].map((ring) => (
           <circle
             key={ring}
             cx={center}
             cy={center}
-            r={(ring / 10) * maxRadius}
+            r={innerRadius + ((maxRadius - innerRadius) * ring) / 10}
             className="wheel-ring"
           />
         ))}
 
         {zones.map((zone, index) => {
           const score = Math.max(1, Math.min(10, scores[zone.label] || 5));
-          const angle = -90 + index * 45;
-          const radians = (angle * Math.PI) / 180;
+          const segmentStart = -90 + index * 45 + segmentGap;
+          const segmentEnd = -90 + (index + 1) * 45 - segmentGap;
+          const midAngle = (segmentStart + segmentEnd) / 2;
 
-          const axisX = center + maxRadius * Math.cos(radians);
-          const axisY = center + maxRadius * Math.sin(radians);
+          const scoreRadius =
+            innerRadius + ((maxRadius - innerRadius) * score) / 10;
 
-          const pointX =
-            center + ((score / 10) * maxRadius) * Math.cos(radians);
-          const pointY =
-            center + ((score / 10) * maxRadius) * Math.sin(radians);
+          const backgroundPath = describeSegment(
+            center,
+            innerRadius,
+            maxRadius,
+            segmentStart,
+            segmentEnd
+          );
 
-          const labelX = center + 165 * Math.cos(radians);
-          const labelY = center + 165 * Math.sin(radians);
+          const scorePath = describeSegment(
+            center,
+            innerRadius,
+            scoreRadius,
+            segmentStart,
+            segmentEnd
+          );
+
+          const labelPosition = polarToCartesian(center, center, 174, midAngle);
+          const scorePosition = polarToCartesian(center, center, 102, midAngle);
+
+          const isActive = activeZone === zone.label;
 
           return (
             <g
@@ -447,25 +554,20 @@ function LifeWheel({ scores }: { scores: Record<string, number> }) {
               className="wheel-zone"
               onClick={() => setActiveZone(zone.label)}
             >
-              <line
-                x1={center}
-                y1={center}
-                x2={axisX}
-                y2={axisY}
-                className="wheel-axis"
+              <path
+                d={backgroundPath}
+                className={isActive ? "wheel-slice-bg active" : "wheel-slice-bg"}
               />
 
-              <circle
-                cx={pointX}
-                cy={pointY}
-                r={activeZone === zone.label ? 9 : 6}
+              <path
+                d={scorePath}
                 fill={zone.color}
-                className="wheel-point"
+                className={isActive ? "wheel-slice-fill active" : "wheel-slice-fill"}
               />
 
               <text
-                x={labelX}
-                y={labelY - 8}
+                x={labelPosition.x}
+                y={labelPosition.y - 10}
                 textAnchor="middle"
                 className="wheel-icon"
               >
@@ -473,40 +575,42 @@ function LifeWheel({ scores }: { scores: Record<string, number> }) {
               </text>
 
               <text
-                x={labelX}
-                y={labelY + 13}
+                x={labelPosition.x}
+                y={labelPosition.y + 9}
                 textAnchor="middle"
-                className={
-                  activeZone === zone.label
-                    ? "wheel-label active"
-                    : "wheel-label"
-                }
+                className={isActive ? "wheel-label active" : "wheel-label"}
               >
                 {zone.label}
               </text>
 
               <text
-                x={labelX}
-                y={labelY + 29}
+                x={scorePosition.x}
+                y={scorePosition.y + 4}
                 textAnchor="middle"
-                className="wheel-score"
+                className="wheel-score-inside"
               >
-                {score}/10
+                {score}
               </text>
             </g>
           );
         })}
 
-        <polygon points={points} className="wheel-shape" />
-
-        <circle cx={center} cy={center} r="30" className="wheel-centre" />
+        <circle cx={center} cy={center} r="39" className="wheel-centre" />
         <text
           x={center}
-          y={center + 5}
+          y={center - 3}
           textAnchor="middle"
           className="wheel-centre-text"
         >
-          your life
+          your
+        </text>
+        <text
+          x={center}
+          y={center + 12}
+          textAnchor="middle"
+          className="wheel-centre-text"
+        >
+          life
         </text>
       </svg>
 
@@ -518,8 +622,8 @@ function LifeWheel({ scores }: { scores: Record<string, number> }) {
         </div>
 
         <p>
-          This area is currently scoring {activeScore}/10. Tap another part of
-          the wheel to explore a different life zone.
+          This area is currently scoring {activeScore}/10. Tap any slice of the
+          wheel to explore a different life zone.
         </p>
       </div>
     </div>
