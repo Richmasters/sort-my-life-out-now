@@ -1,10 +1,40 @@
 import { useState } from "react";
 import "./App.css";
 
-type Step = "landing" | "onboarding";
+type Step = "landing" | "onboarding" | "conversation";
+
+type Message = {
+  role: "assistant" | "user";
+  text: string;
+};
 
 export default function App() {
   const [step, setStep] = useState<Step>("landing");
+  const [message, setMessage] = useState("");
+
+  const [messages, setMessages] = useState<Message[]>([
+    {
+      role: "assistant",
+      text: "Before we build your Wheel of Life, let’s slow things down a little. What feels most messy or heavy in your life right now?",
+    },
+  ]);
+
+  function sendMessage() {
+    if (!message.trim()) return;
+
+    const userMessage: Message = {
+      role: "user",
+      text: message.trim(),
+    };
+
+    const assistantMessage: Message = {
+      role: "assistant",
+      text: "That makes sense. I’m starting to see the shape of it. Tell me a little more about how this is affecting your day-to-day life.",
+    };
+
+    setMessages((current) => [...current, userMessage, assistantMessage]);
+    setMessage("");
+  }
 
   return (
     <main className="app">
@@ -81,8 +111,38 @@ export default function App() {
               <textarea placeholder="A sentence or two is enough..." />
             </label>
 
-            <button type="button">Continue to conversation</button>
+            <button type="button" onClick={() => setStep("conversation")}>
+              Continue to conversation
+            </button>
           </form>
+        </section>
+      )}
+
+      {step === "conversation" && (
+        <section className="card chat-card">
+          <p className="eyebrow">Your conversation</p>
+
+          <h2>Let’s sort through this properly.</h2>
+
+          <div className="messages">
+            {messages.map((item, index) => (
+              <div key={index} className={`message ${item.role}`}>
+                {item.text}
+              </div>
+            ))}
+          </div>
+
+          <div className="chat-input">
+            <textarea
+              value={message}
+              onChange={(event) => setMessage(event.target.value)}
+              placeholder="Type what’s on your mind..."
+            />
+
+            <button type="button" onClick={sendMessage}>
+              Send
+            </button>
+          </div>
         </section>
       )}
     </main>
