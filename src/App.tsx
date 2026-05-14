@@ -18,6 +18,7 @@ type Onboarding = {
 
 type Result = {
   scores: Record<string, number>;
+  insights?: Record<string, string>;
   quickWins: string[];
 };
 
@@ -48,6 +49,16 @@ const fallbackResult: Result = {
     "Life Admin": 31,
     Purpose: 44,
   },
+insights: {
+  Mind: "Your mind looks like it may be carrying a lot at once. The first win here is not to solve everything, but to reduce the noise.",
+  Body: "Your body may not be the main problem, but it still affects how much capacity you have. Small routines could help stabilise everything else.",
+  Money: "Money looks like one of the pressure points. Getting visibility on what is coming in and going out could create quick relief.",
+  Work: "Work appears to be taking up mental space. A clearer boundary or priority list may help reduce the sense of being dragged around by it.",
+  Love: "This looks like one of the steadier areas. It may be worth leaning on safe relationships rather than trying to carry everything alone.",
+  Home: "Home seems functional but could probably feel calmer. Small improvements to your environment may help your head feel clearer.",
+  "Life Admin": "Life admin looks like it may be adding background stress. One short, focused admin session could make things feel less chaotic.",
+  Purpose: "Purpose seems a little unclear right now. That is normal when life is noisy — clarity often returns after the pressure reduces.",
+},
   quickWins: [
     "Choose one small life-admin task and finish it today.",
     "Take a 10-minute walk before trying to solve everything.",
@@ -561,7 +572,7 @@ const focusOrder = getFocusOrder(result.scores);
         </div>
       </div>
 
-      <LifeWheel scores={result.scores} />
+      <LifeWheel scores={result.scores} insights={result.insights} />
 <div className="focus-order">
   <div>
     <p className="eyebrow">Your focus order</p>
@@ -631,7 +642,13 @@ const focusOrder = getFocusOrder(result.scores);
   );
 }
 
-function LifeWheel({ scores }: { scores: Record<string, number> }) {
+function LifeWheel({
+  scores,
+  insights,
+}: {
+  scores: Record<string, number>;
+  insights?: Record<string, string>;
+}) {
   const [activeZone, setActiveZone] = useState("Mind");
 
   const center = 200;
@@ -643,6 +660,9 @@ function LifeWheel({ scores }: { scores: Record<string, number> }) {
   const activeScore = clampScore(scores[active.label]);
   const activeStatus = getScoreStatus(activeScore);
   const activeColour = getScoreColour(activeScore);
+const activeInsight =
+  insights?.[active.label] ||
+  "This area is part of your current life picture. The score is not a judgement — it is a starting point for clearer action.";
 
   return (
     <div className="life-wheel-wrap">
@@ -753,7 +773,7 @@ function LifeWheel({ scores }: { scores: Record<string, number> }) {
           {activeStatus.label}
         </div>
 
-        <p>{activeStatus.message}</p>
+        <p>{activeInsight}</p>
 
         <p className="encouragement">{activeStatus.encouragement}</p>
       </div>

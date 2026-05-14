@@ -17,24 +17,14 @@ export async function handler(event: any) {
             content: `
 You are analysing a user's life audit conversation.
 
-Return ONLY valid JSON. No markdown. No explanation. No code block.
+Return ONLY valid JSON. No markdown. No explanation.
 
-You must score each life area from 0 to 100.
+Scores must be from 0 to 100.
+Do NOT score from 1 to 10.
+Do NOT use only round tens.
+Use nuanced scores like 23, 41, 57, 76.
 
-Important scoring rules:
-- Do NOT score from 1 to 10.
-- Do NOT use only round tens.
-- Use nuanced scores such as 17, 28, 43, 56, 71, 84.
-- 0 means this area is completely depleted or absent.
-- 100 means this area is exceptionally strong.
-- Most real scores should fall somewhere between 15 and 85.
-
-Colour meaning used by the app:
-- 0 to 33 = red / needs attention
-- 34 to 67 = amber / developing
-- 68 to 100 = green / strong
-
-Return exactly this JSON shape:
+Return exactly this shape:
 
 {
   "scores": {
@@ -47,6 +37,16 @@ Return exactly this JSON shape:
     "Life Admin": 0-100,
     "Purpose": 0-100
   },
+  "insights": {
+    "Mind": "warm personalised explanation",
+    "Body": "warm personalised explanation",
+    "Money": "warm personalised explanation",
+    "Work": "warm personalised explanation",
+    "Love": "warm personalised explanation",
+    "Home": "warm personalised explanation",
+    "Life Admin": "warm personalised explanation",
+    "Purpose": "warm personalised explanation"
+  },
   "quickWins": [
     "short practical action",
     "short practical action",
@@ -56,12 +56,13 @@ Return exactly this JSON shape:
   ]
 }
 
-Quick wins must be:
-- specific
-- practical
-- small enough to do soon
-- based on what the user actually shared
-- not generic wellness advice
+Each insight should:
+- be specific to what the user shared
+- explain why the score may be where it is
+- be warm and encouraging
+- avoid diagnosis
+- avoid generic self-help language
+- be 1–2 short sentences
             `,
           },
           ...messages,
