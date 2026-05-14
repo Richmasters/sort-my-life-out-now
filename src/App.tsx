@@ -24,41 +24,31 @@ type Result = {
 type Zone = {
   label: string;
   icon: string;
-  color: string;
 };
 
-const lifeAreas = [
-  "Mind",
-  "Body",
-  "Money",
-  "Work",
-  "Love",
-  "Home",
-  "Life Admin",
-  "Purpose",
+const zones: Zone[] = [
+  { label: "Mind", icon: "🧠" },
+  { label: "Body", icon: "💪" },
+  { label: "Money", icon: "💰" },
+  { label: "Work", icon: "💼" },
+  { label: "Love", icon: "❤️" },
+  { label: "Home", icon: "🏠" },
+  { label: "Life Admin", icon: "🗂️" },
+  { label: "Purpose", icon: "🌟" },
 ];
 
-const zones: Zone[] = [
-  { label: "Mind", icon: "🧠", color: "#8B5CF6" },
-  { label: "Body", icon: "💪", color: "#16A34A" },
-  { label: "Money", icon: "💰", color: "#D97706" },
-  { label: "Work", icon: "💼", color: "#2563EB" },
-  { label: "Love", icon: "❤️", color: "#E11D48" },
-  { label: "Home", icon: "🏠", color: "#0D9488" },
-  { label: "Life Admin", icon: "🗂️", color: "#7C3AED" },
-  { label: "Purpose", icon: "🌟", color: "#C47C4E" },
-];
+const lifeAreas = zones.map((zone) => zone.label);
 
 const fallbackResult: Result = {
   scores: {
-    Mind: 4,
-    Body: 5,
-    Money: 3,
-    Work: 4,
-    Love: 6,
-    Home: 5,
-    "Life Admin": 3,
-    Purpose: 4,
+    Mind: 42,
+    Body: 55,
+    Money: 28,
+    Work: 40,
+    Love: 68,
+    Home: 52,
+    "Life Admin": 31,
+    Purpose: 45,
   },
   quickWins: [
     "Choose one small life-admin task and finish it today.",
@@ -68,6 +58,43 @@ const fallbackResult: Result = {
     "Pick tomorrow’s first task before bed tonight.",
   ],
 };
+
+function normaliseScore(value: number | undefined) {
+  if (!value || Number.isNaN(value)) return 50;
+
+  if (value <= 10) {
+    return Math.round(value * 10);
+  }
+
+  return Math.max(0, Math.min(100, Math.round(value)));
+}
+
+function getScoreStatus(score: number) {
+  if (score <= 33) {
+    return {
+      label: "Needs attention",
+      color: "#C2410C",
+      message:
+        "This area looks like it needs some care. That does not mean failure — it simply means this may be one of the best places to start gently.",
+    };
+  }
+
+  if (score <= 67) {
+    return {
+      label: "Developing",
+      color: "#D97706",
+      message:
+        "There is something to work with here. This area is not broken, but it could probably feel lighter, steadier or more organised with a few focused changes.",
+    };
+  }
+
+  return {
+    label: "Strong area",
+    color: "#15803D",
+    message:
+      "This looks like one of your stronger areas. It is worth noticing what is already working here, because those habits or supports may help other parts of life too.",
+  };
+}
 
 export default function App() {
   const [step, setStep] = useState<Step>("landing");
@@ -503,29 +530,32 @@ function LifeWheel({ scores }: { scores: Record<string, number> }) {
   const segmentGap = 4;
 
   const active = zones.find((zone) => zone.label === activeZone) || zones[0];
-  const activeScore = Math.max(1, Math.min(10, scores[active.label] || 5));
+  const activeScore = normaliseScore(scores[active.label]);
+  const activeStatus = getScoreStatus(activeScore);
 
   return (
     <div className="life-wheel-wrap">
       <svg viewBox="0 0 400 400" className="life-wheel segmented-wheel">
-        {[2, 4, 6, 8, 10].map((ring) => (
+        {[20, 40, 60, 80, 100].map((ring) => (
           <circle
             key={ring}
             cx={center}
             cy={center}
-            r={innerRadius + ((maxRadius - innerRadius) * ring) / 10}
+            r={innerRadius + ((maxRadius - innerRadius) * ring) / 100}
             className="wheel-ring"
           />
         ))}
 
         {zones.map((zone, index) => {
-          const score = Math.max(1, Math.min(10, scores[zone.label] || 5));
+          const score = normaliseScore(scores[zone.label]);
+          const status = getScoreStatus(score);
+
           const segmentStart = -90 + index * 45 + segmentGap;
           const segmentEnd = -90 + (index + 1) * 45 - segmentGap;
           const midAngle = (segmentStart + segmentEnd) / 2;
 
           const scoreRadius =
-            innerRadius + ((maxRadius - innerRadius) * score) / 10;
+            innerRadius + ((maxRadius - innerRadius) * score) / 100;
 
           const backgroundPath = describeSegment(
             center,
@@ -535,16 +565,19 @@ function LifeWheel({ scores }: { scores: Record<string, number> }) {
             segmentEnd
           );
 
-          const scorePath = describeSegment(
-            center,
-            innerRadius,
-            scoreRadius,
-            segmentStart,
-            segmentEnd
-          );
+          const scorePath =
+            score === 0
+              ? ""
+              : describeSegment(
+                  center,
+                  innerRadius,
+                  scoreRadius,
+                  segmentStart,
+                  segmentEnd
+                );
 
           const labelPosition = polarToCartesian(center, center, 174, midAngle);
-          const scorePosition = polarToCartesian(center, center, 102, midAngle);
+          const scorePosition = polarToCartesian(center, center, 98, midAngle);
 
           const isActive = activeZone === zone.label;
 
@@ -556,14 +589,22 @@ function LifeWheel({ scores }: { scores: Record<string, number> }) {
             >
               <path
                 d={backgroundPath}
-                className={isActive ? "wheel-slice-bg active" : "wheel-slice-bg"}
+                className={
+                  isActive ? "wheel-slice-bg active" : "wheel-slice-bg"
+                }
               />
 
-              <path
-                d={scorePath}
-                fill={zone.color}
-                className={isActive ? "wheel-slice-fill active" : "wheel-slice-fill"}
-              />
+              {score > 0 && (
+                <path
+                  d={scorePath}
+                  fill={status.color}
+                  className={
+                    isActive
+                      ? "wheel-slice-fill active"
+                      : "wheel-slice-fill"
+                  }
+                />
+              )}
 
               <text
                 x={labelPosition.x}
@@ -614,17 +655,21 @@ function LifeWheel({ scores }: { scores: Record<string, number> }) {
         </text>
       </svg>
 
-      <div className="active-zone-card" style={{ borderColor: active.color }}>
+      <div
+        className="active-zone-card"
+        style={{ borderColor: activeStatus.color }}
+      >
         <div className="active-zone-top">
           <span>{active.icon}</span>
           <strong>{active.label}</strong>
-          <em>{activeScore}/10</em>
+          <em style={{ color: activeStatus.color }}>{activeScore}/100</em>
         </div>
 
-        <p>
-          This area is currently scoring {activeScore}/10. Tap any slice of the
-          wheel to explore a different life zone.
-        </p>
+        <div className="zone-status" style={{ color: activeStatus.color }}>
+          {activeStatus.label}
+        </div>
+
+        <p>{activeStatus.message}</p>
       </div>
     </div>
   );

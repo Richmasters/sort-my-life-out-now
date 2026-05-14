@@ -582,3 +582,31 @@ textarea:disabled {
     font-size: 12px;
   }
 }
+.zone-status {
+  font-size: 12px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  margin-bottom: 10px;
+}
+
+.wheel-slice-fill {
+  transform-origin: 200px 200px;
+  animation: sliceGrow 700ms ease both;
+}
+
+@keyframes sliceGrow {
+  from {
+    opacity: 0;
+    transform: scale(0.82);
+  }
+
+  to {
+    opacity: 0.78;
+    transform: scale(1);
+  }
+}
+
+.wheel-slice-fill.active {
+  opacity: 0.98;
+}
