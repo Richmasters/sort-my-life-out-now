@@ -371,3 +371,126 @@ textarea:disabled {
     transform-origin: center;
   }
 }
+.life-wheel-wrap {
+  display: grid;
+  gap: 24px;
+  justify-items: center;
+}
+
+.life-wheel {
+  width: min(100%, 460px);
+  display: block;
+  overflow: visible;
+}
+
+.wheel-ring {
+  fill: none;
+  stroke: rgba(28, 43, 30, 0.1);
+  stroke-width: 1;
+  stroke-dasharray: 4 4;
+}
+
+.wheel-axis {
+  stroke: rgba(28, 43, 30, 0.12);
+  stroke-width: 1;
+}
+
+.wheel-shape {
+  fill: rgba(196, 124, 78, 0.22);
+  stroke: #c47c4e;
+  stroke-width: 3;
+  animation: wheelReveal 800ms ease both;
+}
+
+.wheel-zone {
+  cursor: pointer;
+}
+
+.wheel-point {
+  transition: all 180ms ease;
+}
+
+.wheel-icon {
+  font-size: 18px;
+  pointer-events: none;
+}
+
+.wheel-label {
+  font-size: 10px;
+  fill: #5c5c52;
+  font-weight: 700;
+  pointer-events: none;
+}
+
+.wheel-label.active {
+  fill: #1c2b1e;
+}
+
+.wheel-score {
+  font-size: 9px;
+  fill: #c47c4e;
+  font-weight: 800;
+}
+
+.wheel-centre {
+  fill: #f5f0e8;
+  stroke: white;
+  stroke-width: 2;
+}
+
+.wheel-centre-text {
+  font-family: Georgia, serif;
+  font-size: 11px;
+  font-style: italic;
+  fill: #9c9c8c;
+}
+
+.active-zone-card {
+  width: 100%;
+  border: 2px solid #c47c4e;
+  background: #f5f0e8;
+  border-radius: 22px;
+  padding: 18px;
+}
+
+.active-zone-top {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.active-zone-top span {
+  font-size: 24px;
+}
+
+.active-zone-top strong {
+  flex: 1;
+  font-size: 18px;
+}
+
+.active-zone-top em {
+  font-style: normal;
+  font-weight: 800;
+  color: #c47c4e;
+}
+
+.active-zone-card p {
+  margin: 0;
+  color: #5c5c52;
+  line-height: 1.6;
+}
+
+@keyframes wheelReveal {
+  from {
+    opacity: 0;
+    transform: scale(0.92);
+    transform-origin: center;
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1);
+    transform-origin: center;
+  }
+}

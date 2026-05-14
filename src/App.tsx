@@ -215,7 +215,7 @@ export default function App() {
 }
 
 function LifeWheel({ scores }: { scores: Record<string, number> }) {
-  
+  const [activeZone, setActiveZone] = useState("Mind");
 
   const zones = [
     { label: "Mind", icon: "🧠", color: "#8B5CF6" },
@@ -228,8 +228,10 @@ function LifeWheel({ scores }: { scores: Record<string, number> }) {
     { label: "Purpose", icon: "🌟", color: "#C47C4E" },
   ];
 
-  const center = 160;
-  const maxRadius = 110;
+  const center = 200;
+  const maxRadius = 130;
+  const active = zones.find((zone) => zone.label === activeZone) || zones[0];
+  const activeScore = scores[active.label] || 5;
 
   const points = zones
     .map((zone, index) => {
@@ -243,10 +245,94 @@ function LifeWheel({ scores }: { scores: Record<string, number> }) {
     .join(" ");
 
   return (
-    <div>
-      <svg viewBox="0 0 320 320" style={{ width: "100%" }}>
-        <polygon points={points} fill="rgba(196,124,78,0.3)" />
+    <div className="life-wheel-wrap">
+      <svg viewBox="0 0 400 400" className="life-wheel">
+        {[2, 4, 6, 8, 10].map((ring) => (
+          <circle
+            key={ring}
+            cx={center}
+            cy={center}
+            r={(ring / 10) * maxRadius}
+            className="wheel-ring"
+          />
+        ))}
+
+        {zones.map((zone, index) => {
+          const score = Math.max(1, Math.min(10, scores[zone.label] || 5));
+          const angle = -90 + index * 45;
+          const radians = (angle * Math.PI) / 180;
+
+          const axisX = center + maxRadius * Math.cos(radians);
+          const axisY = center + maxRadius * Math.sin(radians);
+
+          const pointX = center + ((score / 10) * maxRadius) * Math.cos(radians);
+          const pointY = center + ((score / 10) * maxRadius) * Math.sin(radians);
+
+          const labelX = center + 165 * Math.cos(radians);
+          const labelY = center + 165 * Math.sin(radians);
+
+          return (
+            <g
+              key={zone.label}
+              className="wheel-zone"
+              onClick={() => setActiveZone(zone.label)}
+            >
+              <line
+                x1={center}
+                y1={center}
+                x2={axisX}
+                y2={axisY}
+                className="wheel-axis"
+              />
+
+              <circle
+                cx={pointX}
+                cy={pointY}
+                r={activeZone === zone.label ? 9 : 6}
+                fill={zone.color}
+                className="wheel-point"
+              />
+
+              <text x={labelX} y={labelY - 8} textAnchor="middle" className="wheel-icon">
+                {zone.icon}
+              </text>
+
+              <text
+                x={labelX}
+                y={labelY + 13}
+                textAnchor="middle"
+                className={activeZone === zone.label ? "wheel-label active" : "wheel-label"}
+              >
+                {zone.label}
+              </text>
+
+              <text x={labelX} y={labelY + 29} textAnchor="middle" className="wheel-score">
+                {score}/10
+              </text>
+            </g>
+          );
+        })}
+
+        <polygon points={points} className="wheel-shape" />
+
+        <circle cx={center} cy={center} r="30" className="wheel-centre" />
+        <text x={center} y={center + 5} textAnchor="middle" className="wheel-centre-text">
+          your life
+        </text>
       </svg>
+
+      <div className="active-zone-card" style={{ borderColor: active.color }}>
+        <div className="active-zone-top">
+          <span>{active.icon}</span>
+          <strong>{active.label}</strong>
+          <em>{activeScore}/10</em>
+        </div>
+
+        <p>
+          This area is currently scoring {activeScore}/10. Tap another part of
+          the wheel to explore a different life zone.
+        </p>
+      </div>
     </div>
   );
 }
