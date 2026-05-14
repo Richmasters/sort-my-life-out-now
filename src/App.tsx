@@ -11,6 +11,7 @@ type Message = {
 export default function App() {
   const [step, setStep] = useState<Step>("landing");
   const [message, setMessage] = useState("");
+  const [isThinking, setIsThinking] = useState(false);
 
   const [messages, setMessages] = useState<Message[]>([
     {
@@ -23,10 +24,10 @@ export default function App() {
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+  }, [messages, isThinking]);
 
   async function sendMessage() {
-    if (!message.trim()) return;
+    if (!message.trim() || isThinking) return;
 
     const updatedMessages: Message[] = [
       ...messages,
@@ -35,6 +36,7 @@ export default function App() {
 
     setMessages(updatedMessages);
     setMessage("");
+    setIsThinking(true);
 
     try {
       const response = await fetch("/.netlify/functions/chat", {
@@ -68,6 +70,8 @@ export default function App() {
           text: "I couldn’t connect properly. Try again in a moment.",
         },
       ]);
+    } finally {
+      setIsThinking(false);
     }
   }
 
@@ -165,18 +169,32 @@ export default function App() {
                 {item.text}
               </div>
             ))}
+
+            {isThinking && (
+              <div className="message assistant typing">
+                <span></span>
+                <span></span>
+                <span></span>
+              </div>
+            )}
+
             <div ref={messagesEndRef} />
           </div>
 
           <div className="chat-input">
             <textarea
               value={message}
+              disabled={isThinking}
               onChange={(event) => setMessage(event.target.value)}
-              placeholder="Type what’s on your mind..."
+              placeholder={
+                isThinking
+                  ? "Thinking..."
+                  : "Type what’s on your mind..."
+              }
             />
 
-            <button type="button" onClick={sendMessage}>
-              Send
+            <button type="button" onClick={sendMessage} disabled={isThinking}>
+              {isThinking ? "Thinking" : "Send"}
             </button>
           </div>
         </section>
