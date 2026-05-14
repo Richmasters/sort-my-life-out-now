@@ -1,7 +1,13 @@
 import { useEffect, useRef, useState } from "react";
 import "./App.css";
 
-type Step = "landing" | "onboarding" | "conversation" | "analysing" | "wheel";
+type Step =
+  | "landing"
+  | "onboarding"
+  | "conversation"
+  | "analysing"
+  | "wheel"
+  | "actionPlan";
 
 type Message = {
   role: "assistant" | "user";
@@ -20,6 +26,16 @@ type Result = {
   scores: Record<string, number>;
   insights?: Record<string, string>;
   quickWins: string[];
+};
+type ActionPlan = {
+  title: string;
+  summary: string;
+  weeks: {
+    week: number;
+    theme: string;
+    focus: string;
+    actions: string[];
+  }[];
 };
 
 type Zone = {
@@ -162,6 +178,8 @@ export default function App() {
   const [message, setMessage] = useState("");
   const [isThinking, setIsThinking] = useState(false);
   const [result, setResult] = useState<Result | null>(null);
+const [actionPlan, setActionPlan] = useState<ActionPlan | null>(null);
+const [isGeneratingPlan, setIsGeneratingPlan] = useState(false);
 
   const [onboarding, setOnboarding] = useState<Onboarding>({
     name: "",
@@ -247,7 +265,52 @@ Use this naturally. Do not list it back mechanically.
     }
   }
 
-  async function analyseLife() {
+  async function analyseLife()async function generateActionPlan() {
+  if (!result) return;
+
+  setIsGeneratingPlan(true);
+
+  try {
+    const response = await fetch("/.netlify/functions/action-plan", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        onboarding,
+        result,
+        messages,
+      }),
+    });
+
+    const text = await response.text();
+    const cleaned = text.replace(/```json|```/g, "").trim();
+    const parsed = JSON.parse(cleaned);
+
+    setActionPlan(parsed);
+    setStep("actionPlan");
+  } catch {
+    setActionPlan({
+      title: "Your 30-day reset plan",
+      summary:
+        "A simple, steady plan to reduce pressure and create movement without overwhelming you.",
+      weeks: [
+        {
+          week: 1,
+          theme: "Stabilise",
+          focus: "Reduce noise and create breathing room.",
+          actions: [
+            "Write down the three areas causing the most pressure.",
+            "Choose one small task you can finish today.",
+            "Take one 10-minute walk without your phone.",
+          ],
+        },
+      ],
+    });
+
+    setStep("actionPlan");
+  } finally {
+    setIsGeneratingPlan(false);
+  }
+} {
     setStep("analysing");
 
     try {
@@ -515,9 +578,12 @@ Use this naturally. Do not list it back mechanically.
 
       {step === "wheel" && result && (
         <ResultsScreen
-          result={result}
-          onboarding={onboarding}
-          onContinue={() => setStep("conversation")}
+  result={result}
+  onboarding={onboarding}
+  onContinue={() => setStep("conversation")}
+  onGeneratePlan={generateActionPlan}
+  isGeneratingPlan={isGeneratingPlan}
+/>
         />
       )}
     </main>
