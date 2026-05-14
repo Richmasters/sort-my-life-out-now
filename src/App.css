@@ -295,3 +295,79 @@ textarea:disabled {
   color: #2c2c24;
   line-height: 1.5;
 }
+.life-wheel-wrap {
+  display: grid;
+  gap: 22px;
+  justify-items: center;
+}
+
+.life-wheel {
+  width: min(100%, 430px);
+  overflow: visible;
+}
+
+.wheel-ring {
+  fill: none;
+  stroke: rgba(28, 43, 30, 0.1);
+  stroke-width: 1;
+}
+
+.wheel-axis {
+  stroke: rgba(28, 43, 30, 0.08);
+  stroke-width: 1;
+}
+
+.wheel-shape {
+  fill: rgba(196, 124, 78, 0.28);
+  stroke: #c47c4e;
+  stroke-width: 3;
+  animation: wheelReveal 900ms ease both;
+}
+
+.wheel-point {
+  fill: #1c2b1e;
+}
+
+.wheel-icon {
+  font-size: 15px;
+}
+
+.wheel-label {
+  font-size: 9px;
+  fill: #5c5c52;
+  font-weight: 600;
+}
+
+.wheel-score-list {
+  width: 100%;
+  display: grid;
+  gap: 8px;
+}
+
+.wheel-score-list div {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: #f5f0e8;
+  font-size: 14px;
+}
+
+.wheel-score-list strong {
+  color: #c47c4e;
+}
+
+@keyframes wheelReveal {
+  from {
+    opacity: 0;
+    transform: scale(0.92);
+    transform-origin: center;
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1);
+    transform-origin: center;
+  }
+}

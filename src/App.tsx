@@ -34,6 +34,97 @@ const fallbackResult: Result = {
 };
 
 export default function App() {
+  function LifeWheel({ scores }: { scores: Record<string, number> }) {
+  const zones = [
+    { label: "Mind", icon: "🧠" },
+    { label: "Body", icon: "💪" },
+    { label: "Money", icon: "💰" },
+    { label: "Work", icon: "💼" },
+    { label: "Love", icon: "❤️" },
+    { label: "Home", icon: "🏠" },
+    { label: "Life Admin", icon: "🗂️" },
+    { label: "Purpose", icon: "🌟" },
+  ];
+
+  const center = 160;
+  const maxRadius = 110;
+
+  const points = zones
+    .map((zone, index) => {
+      const score = Math.max(1, Math.min(10, scores[zone.label] || 5));
+      const angle = -90 + index * 45;
+      const radius = (score / 10) * maxRadius;
+      const x = center + radius * Math.cos((angle * Math.PI) / 180);
+      const y = center + radius * Math.sin((angle * Math.PI) / 180);
+      return `${x},${y}`;
+    })
+    .join(" ");
+
+  return (
+    <div className="life-wheel-wrap">
+      <svg viewBox="0 0 320 320" className="life-wheel">
+        {[2, 4, 6, 8, 10].map((ring) => (
+          <circle
+            key={ring}
+            cx={center}
+            cy={center}
+            r={(ring / 10) * maxRadius}
+            className="wheel-ring"
+          />
+        ))}
+
+        {zones.map((zone, index) => {
+          const angle = -90 + index * 45;
+          const outerX = center + maxRadius * Math.cos((angle * Math.PI) / 180);
+          const outerY = center + maxRadius * Math.sin((angle * Math.PI) / 180);
+          const labelX =
+            center + 138 * Math.cos((angle * Math.PI) / 180);
+          const labelY =
+            center + 138 * Math.sin((angle * Math.PI) / 180);
+
+          return (
+            <g key={zone.label}>
+              <line
+                x1={center}
+                y1={center}
+                x2={outerX}
+                y2={outerY}
+                className="wheel-axis"
+              />
+              <text x={labelX} y={labelY - 5} textAnchor="middle" className="wheel-icon">
+                {zone.icon}
+              </text>
+              <text x={labelX} y={labelY + 12} textAnchor="middle" className="wheel-label">
+                {zone.label}
+              </text>
+            </g>
+          );
+        })}
+
+        <polygon points={points} className="wheel-shape" />
+
+        {zones.map((zone, index) => {
+          const score = Math.max(1, Math.min(10, scores[zone.label] || 5));
+          const angle = -90 + index * 45;
+          const radius = (score / 10) * maxRadius;
+          const x = center + radius * Math.cos((angle * Math.PI) / 180);
+          const y = center + radius * Math.sin((angle * Math.PI) / 180);
+
+          return <circle key={zone.label} cx={x} cy={y} r="4.5" className="wheel-point" />;
+        })}
+      </svg>
+
+      <div className="wheel-score-list">
+        {zones.map((zone) => (
+          <div key={zone.label}>
+            <span>{zone.icon} {zone.label}</span>
+            <strong>{scores[zone.label] || 5}/10</strong>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
   const [step, setStep] = useState<Step>("landing");
   const [message, setMessage] = useState("");
   const [isThinking, setIsThinking] = useState(false);
@@ -280,20 +371,7 @@ export default function App() {
           <p className="eyebrow">Your Life Audit</p>
           <h2>Here’s the first clear picture.</h2>
 
-          <div className="wheel-grid">
-            {Object.entries(result.scores).map(([key, value]) => (
-              <div className="score-card" key={key}>
-                <div className="score-icon">✨</div>
-                <div>
-                  <strong>{key}</strong>
-                  <div className="score-bar">
-                    <span style={{ width: `${value * 10}%` }} />
-                  </div>
-                </div>
-                <em>{value}/10</em>
-              </div>
-            ))}
-          </div>
+          <LifeWheel scores={result.scores} />
 
           <div className="quick-wins">
             <h3>Your five quick wins</h3>
