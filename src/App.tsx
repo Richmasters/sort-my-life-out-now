@@ -35,10 +35,10 @@ export default function App() {
   async function sendMessage() {
     if (!message.trim() || isThinking) return;
 
-    const updatedMessages = [
-      ...messages,
-      { role: "user", text: message.trim() },
-    ];
+    const updatedMessages: Message[] = [
+  ...messages,
+  { role: "user", text: message.trim() },
+];
 
     setMessages(updatedMessages);
     setMessage("");
