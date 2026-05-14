@@ -17,7 +17,11 @@ export async function handler(event: any) {
             content: `
 Create a warm, practical 30-day life improvement plan.
 
+<<<<<<< HEAD
 Return ONLY valid JSON. No markdown.
+=======
+Return ONLY valid JSON. No markdown. No explanation.
+>>>>>>> 0bf56cf (Add action plan function)
 
 Shape:
 
@@ -53,10 +57,17 @@ Shape:
 }
 
 Rules:
+<<<<<<< HEAD
 - Make it specific to the user's scores and conversation
 - Keep actions small and realistic
 - Avoid therapy/medical/financial/legal claims
 - Warm, practical, encouraging tone
+=======
+- Use the user's scores + conversation
+- Keep actions small and realistic
+- Warm, encouraging tone
+- Each week must have exactly 3 actions
+>>>>>>> 0bf56cf (Add action plan function)
             `,
           },
           {

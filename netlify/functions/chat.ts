@@ -1,96 +1,125 @@
+const DEEPSEEK_URL = "https://api.deepseek.com/chat/completions";
+
+function wait(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function fetchWithTimeout(
+  url: string,
+  options: RequestInit,
+  timeoutMs = 15000
+) {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
+
+  try {
+    return await fetch(url, {
+      ...options,
+      signal: controller.signal,
+    });
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+async function callDeepSeek(messages: any[], attempt = 1): Promise<any> {
+  try {
+    const response = await fetchWithTimeout(
+      DEEPSEEK_URL,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${process.env.DEEPSEEK_API_KEY}`,
+        },
+        body: JSON.stringify({
+          model: "deepseek-chat",
+          temperature: 0.7,
+          messages,
+        }),
+      },
+      15000
+    );
+
+    if (!response.ok) {
+      throw new Error(`DeepSeek error: ${response.status}`);
+    }
+
+    return await response.json();
+  } catch (error) {
+    if (attempt >= 3) {
+      throw error;
+    }
+
+    await wait(attempt * 1000);
+    return callDeepSeek(messages, attempt + 1);
+  }
+}
+
 export async function handler(event: any) {
   try {
-    const { messages } = JSON.parse(event.body);
+    const body = JSON.parse(event.body || "{}");
 
-    const response = await fetch("https://api.deepseek.com/chat/completions", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${process.env.DEEPSEEK_API_KEY}`,
-      },
-      body: JSON.stringify({
-        model: "deepseek-chat",
-        temperature: 0.85,
-        messages: [
-          {
-            role: "system",
-            content: `
-You are the calm, perceptive guide inside "Sort My Life Out Now".
+    const incomingMessages = Array.isArray(body.messages)
+      ? body.messages
+      : [];
 
-You are not a chatbot. You are a grounded, thoughtful human presence helping someone understand their life.
+    // 🔥 only send last few messages (critical for reliability)
+    const recentMessages = incomingMessages.slice(-6);
+
+    const messages = [
+      {
+        role: "system",
+        content: `
+You are a calm, practical, emotionally intelligent guide.
 
 Tone:
-- warm and human
-- calm and reassuring
-- perceptive but not intense
-- never corporate
-- never robotic
-- never cheesy
-- never "motivational speaker"
+- warm
+- human
+- grounded
+- not robotic
+- not therapy jargon
 
 Style:
-- short paragraphs
-- natural language
-- conversational, not formal
-- reflect what the user said before moving forward
-- ask one thoughtful question at a time
-- do not overwhelm
-
-Approach:
-- help them slow down and think clearly
-- gently uncover patterns
-- prioritise clarity over advice early on
-- don't rush to solutions
-
-Important:
-- you are not a therapist, doctor, or financial advisor
-- do not diagnose or make claims
-- if the user seems in serious distress, suggest real-world support calmly
+- short responses
+- reflect what user said
+- ask ONE question at a time
+- avoid overwhelming
 
 Goal:
+Help user clarify what’s going on in their life.
+        `,
+      },
+      ...recentMessages,
+    ];
 
-You are gradually building a clear picture of the user’s life across these 8 areas:
-- Mind
-- Body
-- Money
-- Work
-- Love
-- Home
-- Life Admin
-- Purpose
+    const data = await callDeepSeek(messages);
 
-You do NOT ask about them as a list.
-
-Instead:
-- let them talk naturally
-- gently guide the conversation toward missing areas over time
-- notice patterns
-- reflect what you’re learning
-
-Every few responses:
-- ask a question that reveals something about a different life area
-
-Do not mention scoring or "wheel of life".
-Just build understanding naturally.
-
-Respond naturally to what they just said.
-            `,
-          },
-          ...messages,
-        ],
-      }),
-    });
-
-    const data = await response.json();
+    const reply =
+      data?.choices?.[0]?.message?.content ||
+      "I’m still here — could you say that again slightly differently?";
 
     return {
       statusCode: 200,
-      body: JSON.stringify(data),
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        choices: [{ message: { content: reply } }],
+      }),
     };
   } catch (error) {
     return {
-      statusCode: 500,
-      body: JSON.stringify({ error: "Something went wrong" }),
+      statusCode: 200,
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        choices: [
+          {
+            message: {
+              content:
+                "I’m having trouble connecting for a moment, but I haven’t lost the thread. Give me a few seconds and try again.",
+            },
+          },
+        ],
+      }),
     };
   }
 }
