@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import "./App.css";
 
 type Step = "landing" | "onboarding" | "conversation";
@@ -15,9 +15,15 @@ export default function App() {
   const [messages, setMessages] = useState<Message[]>([
     {
       role: "assistant",
-      text: "Before we build your Wheel of Life, let’s slow things down a little. What feels most messy or heavy in your life right now?",
+      text: "Before we try to fix anything, let’s just get a proper feel for what’s going on. What part of life feels heaviest at the moment?",
     },
   ]);
+
+  const messagesEndRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
 
   async function sendMessage() {
     if (!message.trim()) return;
@@ -159,6 +165,7 @@ export default function App() {
                 {item.text}
               </div>
             ))}
+            <div ref={messagesEndRef} />
           </div>
 
           <div className="chat-input">
