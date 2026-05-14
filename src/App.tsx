@@ -521,155 +521,157 @@ function describeSegment(
   ].join(" ");
 }
 
+function getScoreColour(score: number) {
+  if (score <= 33) return "#dc2626";   // red
+  if (score <= 67) return "#f59e0b";   // amber
+  return "#16a34a";                   // green
+}
+
+function getScoreStatus(score: number) {
+  if (score <= 33) {
+    return {
+      label: "Needs attention",
+      message:
+        "This area looks like it’s carrying pressure. That doesn’t mean failure — it simply means this is a good place to start gently.",
+      encouragement:
+        "Start small. Even one simple action here can create noticeable relief.",
+    };
+  }
+
+  if (score <= 67) {
+    return {
+      label: "Building",
+      message:
+        "There is something to work with here. This area isn’t broken, but it could feel steadier or lighter with a bit of focus.",
+      encouragement:
+        "A couple of small improvements here could compound quickly.",
+    };
+  }
+
+  return {
+    label: "Strong",
+    message:
+      "This looks like one of your stronger areas. Something here is working well for you.",
+    encouragement:
+      "Notice what’s working — you may be able to apply that elsewhere.",
+    };
+  }
+}
+
 function LifeWheel({ scores }: { scores: Record<string, number> }) {
   const [activeZone, setActiveZone] = useState("Mind");
 
-  const center = 200;
-  const innerRadius = 42;
-  const maxRadius = 145;
-  const segmentGap = 4;
+  const zones = [
+    { label: "Mind", icon: "🧠" },
+    { label: "Body", icon: "💪" },
+    { label: "Money", icon: "💰" },
+    { label: "Work", icon: "💼" },
+    { label: "Love", icon: "❤️" },
+    { label: "Home", icon: "🏠" },
+    { label: "Life Admin", icon: "🗂️" },
+    { label: "Purpose", icon: "🌟" },
+  ];
 
-  const active = zones.find((zone) => zone.label === activeZone) || zones[0];
-  const activeScore = normaliseScore(scores[active.label]);
-  const activeStatus = getScoreStatus(activeScore);
+  const center = 200;
+  const innerRadius = 50;
+  const maxRadius = 150;
+  const gap = 3;
+
+  function polar(cx: number, cy: number, r: number, angle: number) {
+    const rad = (angle * Math.PI) / 180;
+    return {
+      x: cx + r * Math.cos(rad),
+      y: cy + r * Math.sin(rad),
+    };
+  }
+
+  function arc(
+    innerR: number,
+    outerR: number,
+    start: number,
+    end: number
+  ) {
+    const a = polar(center, center, outerR, start);
+    const b = polar(center, center, outerR, end);
+    const c = polar(center, center, innerR, end);
+    const d = polar(center, center, innerR, start);
+
+    return `
+      M ${a.x} ${a.y}
+      A ${outerR} ${outerR} 0 0 1 ${b.x} ${b.y}
+      L ${c.x} ${c.y}
+      A ${innerR} ${innerR} 0 0 0 ${d.x} ${d.y}
+      Z
+    `;
+  }
+
+  const active = zones.find((z) => z.label === activeZone)!;
+  const score = Math.max(0, Math.min(100, scores[active.label] || 50));
+  const status = getScoreStatus(score);
 
   return (
     <div className="life-wheel-wrap">
-      <svg viewBox="0 0 400 400" className="life-wheel segmented-wheel">
-        {[20, 40, 60, 80, 100].map((ring) => (
-          <circle
-            key={ring}
-            cx={center}
-            cy={center}
-            r={innerRadius + ((maxRadius - innerRadius) * ring) / 100}
-            className="wheel-ring"
-          />
-        ))}
+      <svg viewBox="0 0 400 400" className="life-wheel">
+        {zones.map((zone, i) => {
+          const raw = Math.max(0, Math.min(100, scores[zone.label] || 50));
+          const colour = getScoreColour(raw);
 
-        {zones.map((zone, index) => {
-          const score = normaliseScore(scores[zone.label]);
-          const status = getScoreStatus(score);
+          const start = -90 + i * 45 + gap;
+          const end = -90 + (i + 1) * 45 - gap;
 
-          const segmentStart = -90 + index * 45 + segmentGap;
-          const segmentEnd = -90 + (index + 1) * 45 - segmentGap;
-          const midAngle = (segmentStart + segmentEnd) / 2;
+          const outer =
+            innerRadius + ((maxRadius - innerRadius) * raw) / 100;
 
-          const scoreRadius =
-            innerRadius + ((maxRadius - innerRadius) * score) / 100;
+          const path = arc(innerRadius, outer, start, end);
 
-          const backgroundPath = describeSegment(
-            center,
-            innerRadius,
-            maxRadius,
-            segmentStart,
-            segmentEnd
-          );
-
-          const scorePath =
-            score === 0
-              ? ""
-              : describeSegment(
-                  center,
-                  innerRadius,
-                  scoreRadius,
-                  segmentStart,
-                  segmentEnd
-                );
-
-          const labelPosition = polarToCartesian(center, center, 174, midAngle);
-          const scorePosition = polarToCartesian(center, center, 98, midAngle);
-
-          const isActive = activeZone === zone.label;
+          const mid = (start + end) / 2;
+          const labelPos = polar(center, center, 180, mid);
 
           return (
             <g
               key={zone.label}
-              className="wheel-zone"
               onClick={() => setActiveZone(zone.label)}
+              className="wheel-zone"
             >
-              <path
-                d={backgroundPath}
-                className={
-                  isActive ? "wheel-slice-bg active" : "wheel-slice-bg"
-                }
-              />
+              <path d={arc(innerRadius, maxRadius, start, end)}
+                    className="wheel-bg" />
 
-              {score > 0 && (
+              {raw > 0 && (
                 <path
-                  d={scorePath}
-                  fill={status.color}
-                  className={
-                    isActive
-                      ? "wheel-slice-fill active"
-                      : "wheel-slice-fill"
-                  }
+                  d={path}
+                  fill={colour}
+                  className="wheel-fill"
+                  style={{
+                    animationDelay: `${i * 80}ms`,
+                  }}
                 />
               )}
 
               <text
-                x={labelPosition.x}
-                y={labelPosition.y - 10}
+                x={labelPos.x}
+                y={labelPos.y}
                 textAnchor="middle"
-                className="wheel-icon"
+                className="wheel-label"
               >
-                {zone.icon}
-              </text>
-
-              <text
-                x={labelPosition.x}
-                y={labelPosition.y + 9}
-                textAnchor="middle"
-                className={isActive ? "wheel-label active" : "wheel-label"}
-              >
-                {zone.label}
-              </text>
-
-              <text
-                x={scorePosition.x}
-                y={scorePosition.y + 4}
-                textAnchor="middle"
-                className="wheel-score-inside"
-              >
-                {score}
+                {zone.icon} {zone.label}
               </text>
             </g>
           );
         })}
 
-        <circle cx={center} cy={center} r="39" className="wheel-centre" />
-        <text
-          x={center}
-          y={center - 3}
-          textAnchor="middle"
-          className="wheel-centre-text"
-        >
-          your
-        </text>
-        <text
-          x={center}
-          y={center + 12}
-          textAnchor="middle"
-          className="wheel-centre-text"
-        >
-          life
-        </text>
+        <circle cx={center} cy={center} r="40" className="wheel-centre" />
       </svg>
 
-      <div
-        className="active-zone-card"
-        style={{ borderColor: activeStatus.color }}
-      >
-        <div className="active-zone-top">
-          <span>{active.icon}</span>
-          <strong>{active.label}</strong>
-          <em style={{ color: activeStatus.color }}>{activeScore}/100</em>
-        </div>
+      <div className="active-zone-card">
+        <h3>
+          {active.label} — {score}/100
+        </h3>
 
-        <div className="zone-status" style={{ color: activeStatus.color }}>
-          {activeStatus.label}
-        </div>
+        <strong>{status.label}</strong>
 
-        <p>{activeStatus.message}</p>
+        <p>{status.message}</p>
+
+        <p className="encouragement">{status.encouragement}</p>
       </div>
     </div>
   );

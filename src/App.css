@@ -610,3 +610,45 @@ textarea:disabled {
 .wheel-slice-fill.active {
   opacity: 0.98;
 }
+.wheel-bg {
+  fill: rgba(0,0,0,0.04);
+  stroke: white;
+  stroke-width: 2;
+}
+
+.wheel-fill {
+  transform-origin: 200px 200px;
+  animation: growSlice 700ms ease forwards;
+  opacity: 0;
+}
+
+@keyframes growSlice {
+  from {
+    transform: scale(0);
+    opacity: 0;
+  }
+
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.wheel-label {
+  font-size: 11px;
+  fill: #333;
+  pointer-events: none;
+}
+
+.active-zone-card {
+  margin-top: 20px;
+  background: #f5f0e8;
+  padding: 20px;
+  border-radius: 20px;
+}
+
+.encouragement {
+  margin-top: 10px;
+  font-style: italic;
+  color: #555;
+}
