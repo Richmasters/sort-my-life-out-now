@@ -140,6 +140,11 @@ function getLowestZone(scores: Record<string, number>) {
     return score < lowestScore ? zone : lowest;
   }, zones[0]);
 }
+function getFocusOrder(scores: Record<string, number>) {
+  return [...zones].sort(
+    (a, b) => clampScore(scores[a.label]) - clampScore(scores[b.label])
+  );
+}
 
 export default function App() {
   const [step, setStep] = useState<Step>("landing");
@@ -522,6 +527,7 @@ function ResultsScreen({
   const priorityScore = clampScore(result.scores[priorityZone.label]);
   const priorityStatus = getScoreStatus(priorityScore);
   const priorityColour = getScoreColour(priorityScore);
+const focusOrder = getFocusOrder(result.scores);
 
   return (
     <section className="card wheel-card results-card">
@@ -556,6 +562,40 @@ function ResultsScreen({
       </div>
 
       <LifeWheel scores={result.scores} />
+<div className="focus-order">
+  <div>
+    <p className="eyebrow">Your focus order</p>
+    <h3>Where to start first</h3>
+    <p>
+      Start with the lowest scores first. These are the areas most likely to
+      create relief if you give them gentle, focused attention.
+    </p>
+  </div>
+
+  <div className="focus-list">
+    {focusOrder.map((zone, index) => {
+      const score = clampScore(result.scores[zone.label]);
+      const status = getScoreStatus(score);
+      const colour = getScoreColour(score);
+
+      return (
+        <button
+          type="button"
+          className="focus-item"
+          key={zone.label}
+          style={{ borderColor: colour }}
+        >
+          <span>{index + 1}</span>
+          <strong>
+            {zone.icon} {zone.label}
+          </strong>
+          <em style={{ color: colour }}>{score}/100</em>
+          <small>{status.label}</small>
+        </button>
+      );
+    })}
+  </div>
+</div>
 
       <div className="quick-wins upgraded-quick-wins">
         <h3>Your five quick wins</h3>
