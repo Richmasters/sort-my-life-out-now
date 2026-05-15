@@ -7,7 +7,7 @@ function wait(ms: number) {
 async function fetchWithTimeout(
   url: string,
   options: RequestInit,
-  timeoutMs = 15000
+  timeoutMs = 20000
 ) {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), timeoutMs);
@@ -41,7 +41,7 @@ async function callOpenRouter(messages: any[], attempt = 1): Promise<any> {
           messages,
         }),
       },
-      15000
+      20000
     );
 
     if (!response.ok) {
@@ -55,7 +55,7 @@ async function callOpenRouter(messages: any[], attempt = 1): Promise<any> {
       throw error;
     }
 
-    await wait(attempt * 1000);
+    await wait(attempt * 1200);
     return callOpenRouter(messages, attempt + 1);
   }
 }
@@ -68,7 +68,7 @@ export async function handler(event: any) {
       ? body.messages
       : [];
 
-    const recentMessages = incomingMessages.slice(-6);
+    const recentMessages = incomingMessages.slice(-8);
 
     const messages = [
       {
@@ -78,7 +78,7 @@ You are a calm, perceptive, emotionally intelligent guide.
 
 Your goal is NOT to chat casually.
 
-Your goal is to quietly understand what is actually going on in the user’s life so you can later generate a genuinely useful life analysis and action plan.
+Your goal is to quietly understand what is actually going on in the user's life so you can later generate a genuinely useful life analysis and action plan.
 
 Approach:
 - Be warm, natural, and human
@@ -87,16 +87,16 @@ Approach:
 
 Conversation rules:
 1. Follow threads.
-If a user says something vague like “it’s overwhelming”, gently dig deeper.
+If a user says something vague like "it's overwhelming", gently dig deeper.
 
 2. Ask one strong question at a time.
 Never ask multiple questions in one message.
 
-3. Don’t jump topics too quickly.
+3. Do not jump topics too quickly.
 Stay with one area until you understand it properly before moving on.
 
 4. Look for patterns.
-Quietly identify pressure points, avoidance, uncertainty, lack of structure and emotional load.
+Quietly identify pressure points, avoidance, uncertainty, lack of structure, emotional load and practical blocks.
 
 5. Be gently probing, not aggressive.
 You can challenge lightly when useful.
@@ -135,23 +135,9 @@ By the end of the conversation, you should have enough depth to produce a meanin
       }),
     };
   } catch (error) {
-  console.error("CHAT FUNCTION ERROR:", error);
+    console.error("CHAT FUNCTION ERROR:", error);
 
-  return {
-    statusCode: 200,
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      choices: [
-        {
-          message: {
-            content:
-              "Debug: chat function failed. Check Netlify function logs for CHAT FUNCTION ERROR.",
-          },
-        },
-      ],
-    }),
-  };
-}
+    return {
       statusCode: 200,
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
