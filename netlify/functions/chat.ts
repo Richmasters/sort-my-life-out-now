@@ -134,8 +134,24 @@ By the end of the conversation, you should have enough depth to produce a meanin
         choices: [{ message: { content: reply } }],
       }),
     };
-  } catch {
-    return {
+  } catch (error) {
+  console.error("CHAT FUNCTION ERROR:", error);
+
+  return {
+    statusCode: 200,
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      choices: [
+        {
+          message: {
+            content:
+              "Debug: chat function failed. Check Netlify function logs for CHAT FUNCTION ERROR.",
+          },
+        },
+      ],
+    }),
+  };
+}
       statusCode: 200,
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
