@@ -1,4 +1,4 @@
-const DEEPSEEK_URL = "https://api.deepseek.com/chat/completions";
+const API_URL = "https://openrouter.ai/api/v1/chat/completions";
 
 function wait(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -29,17 +29,11 @@ async function callDeepSeek(messages: any[], attempt = 1): Promise<any> {
       {
         method: "POST",
         headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${process.env.DEEPSEEK_API_KEY}`,
-        },
-        body: JSON.stringify({
-          model: "deepseek-chat",
-          temperature: 0.7,
-          messages,
-        }),
-      },
-      15000
-    );
+  "Content-Type": "application/json",
+  Authorization: `Bearer ${process.env.OPENROUTER_API_KEY}`,
+  "HTTP-Referer": "https://sortmylifeout-now.com",
+  "X-OpenRouter-Title": "Sort My Life Out Now",
+},
 
     if (!response.ok) {
       throw new Error(`DeepSeek error: ${response.status}`);
