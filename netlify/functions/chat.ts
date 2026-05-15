@@ -22,21 +22,31 @@ async function fetchWithTimeout(
   }
 }
 
-async function callDeepSeek(messages: any[], attempt = 1): Promise<any> {
+async function callOpenRouter(messages: any[], attempt = 1): Promise<any> {
   try {
     const response = await fetchWithTimeout(
-      DEEPSEEK_URL,
+      API_URL,
       {
         method: "POST",
         headers: {
-  "Content-Type": "application/json",
-  Authorization: `Bearer ${process.env.OPENROUTER_API_KEY}`,
-  "HTTP-Referer": "https://sortmylifeout-now.com",
-  "X-OpenRouter-Title": "Sort My Life Out Now",
-},
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${process.env.OPENROUTER_API_KEY}`,
+          "HTTP-Referer": "https://sortmylifeout-now.com",
+          "X-OpenRouter-Title": "Sort My Life Out Now",
+        },
+        body: JSON.stringify({
+          model: "x-ai/grok-4",
+          temperature: 0.7,
+          max_tokens: 500,
+          messages,
+        }),
+      },
+      15000
+    );
 
     if (!response.ok) {
-      throw new Error(`DeepSeek error: ${response.status}`);
+      const errorText = await response.text();
+      throw new Error(`OpenRouter error ${response.status}: ${errorText}`);
     }
 
     return await response.json();
@@ -46,7 +56,7 @@ async function callDeepSeek(messages: any[], attempt = 1): Promise<any> {
     }
 
     await wait(attempt * 1000);
-    return callDeepSeek(messages, attempt + 1);
+    return callOpenRouter(messages, attempt + 1);
   }
 }
 
@@ -58,7 +68,6 @@ export async function handler(event: any) {
       ? body.messages
       : [];
 
-    // 🔥 only send last few messages (critical for reliability)
     const recentMessages = incomingMessages.slice(-6);
 
     const messages = [
@@ -72,42 +81,30 @@ Your goal is NOT to chat casually.
 Your goal is to quietly understand what is actually going on in the user’s life so you can later generate a genuinely useful life analysis and action plan.
 
 Approach:
-
 - Be warm, natural, and human
-- But be focused and purposeful
+- Be focused and purposeful
 - Do not stay at surface level
 
 Conversation rules:
+1. Follow threads.
+If a user says something vague like “it’s overwhelming”, gently dig deeper.
 
-1. Follow threads
-If a user says something vague like “it’s overwhelming”, gently dig deeper:
-- What specifically?
-- What’s taking up most mental space?
-- What feels stuck vs just busy?
-
-2. Ask one strong question at a time
+2. Ask one strong question at a time.
 Never ask multiple questions in one message.
 
-3. Don’t jump topics too quickly
+3. Don’t jump topics too quickly.
 Stay with one area until you understand it properly before moving on.
 
-4. Look for patterns
-Quietly identify:
-- pressure points
-- avoidance
-- uncertainty
-- lack of structure
-- emotional load
+4. Look for patterns.
+Quietly identify pressure points, avoidance, uncertainty, lack of structure and emotional load.
 
-5. Be gently probing, not aggressive
-You can challenge lightly:
-- “Is that something you’re avoiding, or something you’re unsure how to solve?”
-- “Which part of that actually feels hardest?”
+5. Be gently probing, not aggressive.
+You can challenge lightly when useful.
 
-6. Avoid giving solutions too early
-Do NOT jump into advice. Focus on understanding first.
+6. Avoid giving solutions too early.
+Focus on understanding first.
 
-7. Keep responses concise
+7. Keep responses concise.
 Short, clear, human.
 
 Tone:
@@ -124,7 +121,7 @@ By the end of the conversation, you should have enough depth to produce a meanin
       ...recentMessages,
     ];
 
-    const data = await callDeepSeek(messages);
+    const data = await callOpenRouter(messages);
 
     const reply =
       data?.choices?.[0]?.message?.content ||
@@ -137,7 +134,7 @@ By the end of the conversation, you should have enough depth to produce a meanin
         choices: [{ message: { content: reply } }],
       }),
     };
-  } catch (error) {
+  } catch {
     return {
       statusCode: 200,
       headers: { "Content-Type": "application/json" },
