@@ -4,19 +4,12 @@ function wait(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-async function fetchWithTimeout(
-  url: string,
-  options: RequestInit,
-  timeoutMs = 20000
-) {
+async function fetchWithTimeout(url: string, options: any, timeoutMs = 7000) {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), timeoutMs);
 
   try {
-    return await fetch(url, {
-      ...options,
-      signal: controller.signal,
-    });
+    return await fetch(url, { ...options, signal: controller.signal });
   } finally {
     clearTimeout(timeout);
   }
@@ -35,13 +28,13 @@ async function callOpenRouter(messages: any[], attempt = 1): Promise<any> {
           "X-OpenRouter-Title": "Sort My Life Out Now",
         },
         body: JSON.stringify({
-          model: "x-ai/grok-4",
+          model: "x-ai/grok-4.3",
           temperature: 0.7,
-          max_tokens: 500,
+          max_tokens: 450,
           messages,
         }),
       },
-      20000
+      7000
     );
 
     if (!response.ok) {
@@ -51,24 +44,25 @@ async function callOpenRouter(messages: any[], attempt = 1): Promise<any> {
 
     return await response.json();
   } catch (error) {
-    if (attempt >= 3) {
-      throw error;
-    }
-
-    await wait(attempt * 1200);
+    if (attempt >= 2) throw error;
+    await wait(800);
     return callOpenRouter(messages, attempt + 1);
   }
 }
 
 export async function handler(event: any) {
   try {
+    if (event.httpMethod === "GET") {
+      return {
+        statusCode: 200,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ok: true, function: "chat" }),
+      };
+    }
+
     const body = JSON.parse(event.body || "{}");
-
-    const incomingMessages = Array.isArray(body.messages)
-      ? body.messages
-      : [];
-
-    const recentMessages = incomingMessages.slice(-8);
+    const incomingMessages = Array.isArray(body.messages) ? body.messages : [];
+    const recentMessages = incomingMessages.slice(-6);
 
     const messages = [
       {
@@ -76,46 +70,17 @@ export async function handler(event: any) {
         content: `
 You are a calm, perceptive, emotionally intelligent guide.
 
-Your goal is NOT to chat casually.
+Your goal is to understand what is actually going on in the user's life so the app can later generate a useful life analysis and action plan.
 
-Your goal is to quietly understand what is actually going on in the user's life so you can later generate a genuinely useful life analysis and action plan.
+Be warm, focused, concise and gently probing.
 
-Approach:
-- Be warm, natural, and human
-- Be focused and purposeful
-- Do not stay at surface level
-
-Conversation rules:
-1. Follow threads.
-If a user says something vague like "it's overwhelming", gently dig deeper.
-
-2. Ask one strong question at a time.
-Never ask multiple questions in one message.
-
-3. Do not jump topics too quickly.
-Stay with one area until you understand it properly before moving on.
-
-4. Look for patterns.
-Quietly identify pressure points, avoidance, uncertainty, lack of structure, emotional load and practical blocks.
-
-5. Be gently probing, not aggressive.
-You can challenge lightly when useful.
-
-6. Avoid giving solutions too early.
-Focus on understanding first.
-
-7. Keep responses concise.
-Short, clear, human.
-
-Tone:
-- grounded
-- calm
-- perceptive
-- not robotic
-- not therapy jargon
-
-Goal:
-By the end of the conversation, you should have enough depth to produce a meaningful life breakdown — not a generic one.
+Rules:
+- Ask one strong question at a time.
+- Do not jump topics too quickly.
+- If the user is vague, ask what specifically they mean.
+- Look for pressure points, avoidance, uncertainty, emotional load and practical blocks.
+- Do not give solutions too early.
+- Avoid therapy jargon.
         `,
       },
       ...recentMessages,
