@@ -927,7 +927,9 @@ Use this naturally. Do not list it back mechanically.
             <button onClick={() => setStep("wheel")}>Back to Life Picture</button>
           </div>
         </section>
-      )}
+      )}    </main>
+  );
+}
 
 function LifePictureProgress({
   coverage,
