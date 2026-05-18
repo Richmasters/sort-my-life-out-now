@@ -397,7 +397,7 @@ Use this naturally. Do not list it back mechanically.
             sense of what to do next.
           </p>
 
-          <div className="hero-actions">
+          <div className="hero-actions desktop-hero-actions">
             <button onClick={() => setStep("onboarding")}>
               Start your life audit
             </button>
@@ -406,6 +406,12 @@ Use this naturally. Do not list it back mechanically.
 
           <div className="landing-panels">
             <div>
+<div className="hero-actions mobile-hero-actions">
+  <button onClick={() => setStep("onboarding")}>
+    Start your life audit
+  </button>
+  <span>No judgement. No noise. Just clarity.</span>
+</div>
               <strong>1</strong>
               <h3>Talk it through</h3>
               <p>
@@ -528,19 +534,7 @@ Use this naturally. Do not list it back mechanically.
               </select>
             </label>
 
-            <label>
-              What would you like help with?
-              <textarea
-                value={onboarding.helpWanted}
-                onChange={(event) =>
-                  setOnboarding({
-                    ...onboarding,
-                    helpWanted: event.target.value,
-                  })
-                }
-                placeholder="A sentence or two is enough..."
-              />
-            </label>
+            
 
             <button type="button" onClick={() => setStep("conversation")}>
               Continue to conversation
