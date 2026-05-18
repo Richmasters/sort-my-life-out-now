@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import "./App.css";
 
 type Step =
@@ -44,6 +44,10 @@ type Zone = {
   icon: string;
 };
 
+type CoverageState = "unexplored" | "forming" | "clear";
+type ConversationPhase = "exploring" | "finalCheck" | "ready";
+type CoverageMap = Record<string, CoverageState>;
+
 const zones: Zone[] = [
   { label: "Mind", icon: "🧠" },
   { label: "Body", icon: "💪" },
@@ -54,6 +58,17 @@ const zones: Zone[] = [
   { label: "Life Admin", icon: "🗂️" },
   { label: "Purpose", icon: "🌟" },
 ];
+
+const initialCoverage: CoverageMap = {
+  Mind: "unexplored",
+  Body: "unexplored",
+  Money: "unexplored",
+  Work: "unexplored",
+  Love: "unexplored",
+  Home: "unexplored",
+  "Life Admin": "unexplored",
+  Purpose: "unexplored",
+};
 
 const fallbackResult: Result = {
   scores: {
@@ -227,6 +242,32 @@ function segmentPath(
   ].join(" ");
 }
 
+function getCoverageLabel(state: CoverageState) {
+  if (state === "clear") return "Clear enough";
+  if (state === "forming") return "Taking shape";
+  return "Not explored yet";
+}
+
+function normaliseCoverage(value: unknown): CoverageMap {
+  if (!value || typeof value !== "object") return initialCoverage;
+
+  const raw = value as Record<string, unknown>;
+
+  return zones.reduce<CoverageMap>((accumulator, zone) => {
+    const candidate = raw[zone.label];
+    accumulator[zone.label] =
+      candidate === "forming" || candidate === "clear"
+        ? candidate
+        : "unexplored";
+    return accumulator;
+  }, {});
+}
+
+function normalisePhase(value: unknown): ConversationPhase {
+  if (value === "finalCheck" || value === "ready") return value;
+  return "exploring";
+}
+
 export default function App() {
   const [step, setStep] = useState<Step>("landing");
   const [message, setMessage] = useState("");
@@ -234,6 +275,9 @@ export default function App() {
   const [result, setResult] = useState<Result | null>(null);
   const [actionPlan, setActionPlan] = useState<ActionPlan | null>(null);
   const [isGeneratingPlan, setIsGeneratingPlan] = useState(false);
+  const [coverage, setCoverage] = useState<CoverageMap>(initialCoverage);
+  const [conversationPhase, setConversationPhase] =
+    useState<ConversationPhase>("exploring");
 
   const [onboarding, setOnboarding] = useState<Onboarding>({
     name: "",
@@ -270,7 +314,7 @@ Use this naturally. Do not list it back mechanically.
   }
 
   async function sendMessage() {
-    if (!message.trim() || isThinking) return;
+    if (!message.trim() || isThinking || conversationPhase === "ready") return;
 
     const updatedMessages: Message[] = [
       ...messages,
@@ -293,19 +337,25 @@ Use this naturally. Do not list it back mechanically.
               content: m.text,
             })),
           ],
+          coverage,
+          phase: conversationPhase,
         }),
       });
 
       const data = await response.json();
 
       const aiReply =
-        data?.choices?.[0]?.message?.content ||
-        "I’m here with you. Tell me a little more about what feels hardest right now.";
+        typeof data?.reply === "string" && data.reply.trim()
+          ? data.reply.trim()
+          : "I’m here with you. Tell me a little more about what feels hardest right now.";
 
       setMessages((current) => [
         ...current,
         { role: "assistant", text: aiReply },
       ]);
+
+      setCoverage(normaliseCoverage(data?.coverage));
+      setConversationPhase(normalisePhase(data?.phase));
     } catch {
       setMessages((current) => [
         ...current,
@@ -379,7 +429,23 @@ Use this naturally. Do not list it back mechanically.
     }
   }
 
-  const canReveal = messages.filter((m) => m.role === "user").length >= 3;
+  const coverageStats = useMemo(() => {
+    const values = Object.values(coverage);
+    return {
+      clear: values.filter((value) => value === "clear").length,
+      forming: values.filter((value) => value === "forming").length,
+      unexplored: values.filter((value) => value === "unexplored").length,
+    };
+  }, [coverage]);
+
+  const progressMessage =
+    conversationPhase === "ready"
+      ? "Your Life Picture is ready. I have enough to build a meaningful first view."
+      : conversationPhase === "finalCheck"
+        ? "We are nearly there. One final thought from you will help make the picture feel complete."
+        : coverageStats.clear >= 4
+          ? "A strong picture is forming. I’m filling in the remaining gaps so your Life Picture feels properly grounded."
+          : "We are building your Life Picture as we talk. The zones below show what is becoming clearer.";
 
   return (
     <main className="app">
@@ -566,6 +632,11 @@ Use this naturally. Do not list it back mechanically.
               : "Let’s sort through this properly."}
           </h2>
 
+          <LifePictureProgress
+            coverage={coverage}
+            progressMessage={progressMessage}
+          />
+
           <div className="messages">
             {messages.map((item, index) => (
               <div key={`${item.role}-${index}`} className={`message ${item.role}`}>
@@ -584,26 +655,32 @@ Use this naturally. Do not list it back mechanically.
             <div ref={messagesEndRef} />
           </div>
 
-          {canReveal && (
-            <button className="reveal-button" onClick={analyseLife}>
-              Reveal my Life Picture
-            </button>
+          {conversationPhase === "ready" ? (
+            <div className="ready-panel">
+              <p>
+                I have enough now to build a meaningful Life Picture from what
+                you have shared.
+              </p>
+              <button className="reveal-button" onClick={analyseLife}>
+                Reveal my Life Picture
+              </button>
+            </div>
+          ) : (
+            <div className="chat-input">
+              <textarea
+                value={message}
+                disabled={isThinking}
+                onChange={(event) => setMessage(event.target.value)}
+                placeholder={
+                  isThinking ? "Thinking..." : "Type what’s on your mind..."
+                }
+              />
+
+              <button type="button" onClick={sendMessage} disabled={isThinking}>
+                {isThinking ? "Thinking" : "Send"}
+              </button>
+            </div>
           )}
-
-          <div className="chat-input">
-            <textarea
-              value={message}
-              disabled={isThinking}
-              onChange={(event) => setMessage(event.target.value)}
-              placeholder={
-                isThinking ? "Thinking..." : "Type what’s on your mind..."
-              }
-            />
-
-            <button type="button" onClick={sendMessage} disabled={isThinking}>
-              {isThinking ? "Thinking" : "Send"}
-            </button>
-          </div>
         </section>
       )}
 
@@ -663,6 +740,42 @@ Use this naturally. Do not list it back mechanically.
         </section>
       )}
     </main>
+  );
+}
+
+function LifePictureProgress({
+  coverage,
+  progressMessage,
+}: {
+  coverage: CoverageMap;
+  progressMessage: string;
+}) {
+  return (
+    <div className="coverage-panel">
+      <div className="coverage-heading">
+        <p className="eyebrow">Your Life Picture is taking shape</p>
+        <p>{progressMessage}</p>
+      </div>
+
+      <div className="coverage-grid">
+        {zones.map((zone) => {
+          const state = coverage[zone.label] || "unexplored";
+
+          return (
+            <div className={`coverage-item ${state}`} key={zone.label}>
+              <div className="coverage-item-top">
+                <span>{zone.icon}</span>
+                <strong>{zone.label}</strong>
+                <small>{getCoverageLabel(state)}</small>
+              </div>
+              <div className="coverage-track" aria-hidden="true">
+                <span />
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
   );
 }
 
@@ -920,6 +1033,7 @@ function LifeWheel({
           <strong>{active.label}</strong>
           <em style={{ color: activeColour }}>{activeScore}/100</em>
         </div>
+
         <div className="zone-status" style={{ color: activeColour }}>
           {activeStatus.label}
         </div>
@@ -931,4 +1045,3 @@ function LifeWheel({
     </div>
   );
 }
-        

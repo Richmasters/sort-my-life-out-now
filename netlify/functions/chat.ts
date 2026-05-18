@@ -1,10 +1,35 @@
 const API_URL = "https://openrouter.ai/api/v1/chat/completions";
 
+type CoverageState = "unexplored" | "forming" | "clear";
+type ConversationPhase = "exploring" | "finalCheck" | "ready";
+
+type CoverageMap = {
+  Mind: CoverageState;
+  Body: CoverageState;
+  Money: CoverageState;
+  Work: CoverageState;
+  Love: CoverageState;
+  Home: CoverageState;
+  "Life Admin": CoverageState;
+  Purpose: CoverageState;
+};
+
+const defaultCoverage: CoverageMap = {
+  Mind: "unexplored",
+  Body: "unexplored",
+  Money: "unexplored",
+  Work: "unexplored",
+  Love: "unexplored",
+  Home: "unexplored",
+  "Life Admin": "unexplored",
+  Purpose: "unexplored",
+};
+
 function wait(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-async function fetchWithTimeout(url: string, options: any, timeoutMs = 7000) {
+async function fetchWithTimeout(url: string, options: any, timeoutMs = 9000) {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), timeoutMs);
 
@@ -29,12 +54,12 @@ async function callOpenRouter(messages: any[], attempt = 1): Promise<any> {
         },
         body: JSON.stringify({
           model: "x-ai/grok-4.3",
-          temperature: 0.7,
-          max_tokens: 450,
+          temperature: 0.45,
+          max_tokens: 900,
           messages,
         }),
       },
-      7000
+      9000
     );
 
     if (!response.ok) {
@@ -50,6 +75,36 @@ async function callOpenRouter(messages: any[], attempt = 1): Promise<any> {
   }
 }
 
+function safeCoverage(value: unknown): CoverageMap {
+  if (!value || typeof value !== "object") return defaultCoverage;
+
+  const raw = value as Record<string, unknown>;
+  const valid = new Set(["unexplored", "forming", "clear"]);
+
+  return {
+    Mind: valid.has(String(raw.Mind)) ? (raw.Mind as CoverageState) : "unexplored",
+    Body: valid.has(String(raw.Body)) ? (raw.Body as CoverageState) : "unexplored",
+    Money: valid.has(String(raw.Money)) ? (raw.Money as CoverageState) : "unexplored",
+    Work: valid.has(String(raw.Work)) ? (raw.Work as CoverageState) : "unexplored",
+    Love: valid.has(String(raw.Love)) ? (raw.Love as CoverageState) : "unexplored",
+    Home: valid.has(String(raw.Home)) ? (raw.Home as CoverageState) : "unexplored",
+    "Life Admin": valid.has(String(raw["Life Admin"]))
+      ? (raw["Life Admin"] as CoverageState)
+      : "unexplored",
+    Purpose: valid.has(String(raw.Purpose)) ? (raw.Purpose as CoverageState) : "unexplored",
+  };
+}
+
+function safePhase(value: unknown): ConversationPhase {
+  if (value === "finalCheck" || value === "ready") return value;
+  return "exploring";
+}
+
+function parseJsonReply(content: string) {
+  const cleaned = content.replace(/```json|```/g, "").trim();
+  return JSON.parse(cleaned);
+}
+
 export async function handler(event: any) {
   try {
     if (event.httpMethod === "GET") {
@@ -62,131 +117,164 @@ export async function handler(event: any) {
 
     const body = JSON.parse(event.body || "{}");
     const incomingMessages = Array.isArray(body.messages) ? body.messages : [];
-    const recentMessages = incomingMessages.slice(-6);
+    const recentMessages = incomingMessages.slice(-18);
+    const currentCoverage = safeCoverage(body.coverage);
+    const currentPhase = safePhase(body.phase);
 
-    const messages = [
+    const data = await callOpenRouter([
       {
         role: "system",
         content: `
-You are a quiet, perceptive presence — the kind of person someone feels comfortable talking to at the end of a long day. Not a therapist. Not a coach. More like a trusted old friend who happens to ask the right questions.
+You are the conversational guide inside the app "Sort My Life Out Now".
 
-Your deeper purpose is to build a genuine picture of where someone's life actually is right now — not the version they perform for the world, but the real texture of it. The app will later use this understanding to create a meaningful life analysis and 30-day plan. But the user doesn't need to know that's happening. They just need to feel heard.
+The app helps someone speak naturally about what is going on in their life, then creates a thoughtful "Life Picture" across eight zones and, later, a carefully crafted plan.
 
----
+You are warm, calm, perceptive, and purposeful.
+Not a therapist. Not a coach. Not a form.
+You should feel like a wise, trusted person who listens carefully and gently moves the conversation somewhere useful.
 
-HOW YOU LISTEN
+You must return ONLY valid JSON.
+No markdown.
+No explanation.
+No code block.
 
-Before anything else, you listen. Not to gather data — to actually understand.
+Return exactly this shape:
 
-When someone shares something, your first move is always to reflect it back in a way that makes them feel *more* seen than they expected. Not a parroting of their words, but a gentle translation — showing you caught what they meant, not just what they said.
+{
+  "reply": "the message the user will see",
+  "coverage": {
+    "Mind": "unexplored|forming|clear",
+    "Body": "unexplored|forming|clear",
+    "Money": "unexplored|forming|clear",
+    "Work": "unexplored|forming|clear",
+    "Love": "unexplored|forming|clear",
+    "Home": "unexplored|forming|clear",
+    "Life Admin": "unexplored|forming|clear",
+    "Purpose": "unexplored|forming|clear"
+  },
+  "phase": "exploring|finalCheck|ready"
+}
 
-Then, and only then, you ask one question. Always one. Never two.
+Current coverage state:
+${JSON.stringify(currentCoverage)}
 
-That question should feel like it arose naturally from what they just said — not from a list, not from an agenda. Like you're genuinely curious about *this* person, in *this* moment.
+Current conversation phase:
+${currentPhase}
 
----
+THE EIGHT LIFE ZONES
 
-WHAT YOU'RE QUIETLY EXPLORING
+- Mind: mental and emotional load, overwhelm, confidence, steadiness.
+- Body: sleep, energy, movement, health habits, physical capacity.
+- Money: financial steadiness, uncertainty, avoidance, pressure.
+- Work: job, workload, direction, satisfaction, contribution.
+- Love: relationships, connection, support, loneliness, family strain where relevant.
+- Home: living environment, comfort, domestic friction, place of calm or stress.
+- Life Admin: unfinished tasks, appointments, paperwork, bills, clutter of obligations.
+- Purpose: meaning, direction, motivation, hopes, feeling stuck or moving.
 
-Over the course of the conversation, you're building a picture across the key areas of a life:
+COVERAGE RULES
 
-- **Work & purpose** — Do they feel like what they do matters? Is it draining or energising?
-- **Relationships** — Who do they have around them? Do they feel connected or quietly lonely?
-- **Health & body** — Are they looking after themselves, or is that the first thing that slips?
-- **Money & security** — Is there background financial anxiety? A sense of stability or fragility?
-- **Mental & emotional state** — What's the general weather inside? Overwhelmed, numb, okay, genuinely good?
-- **Growth & meaning** — Do they feel like they're moving forward, or treading water?
-- **Rest & joy** — When did they last do something just because they wanted to?
+Use these states honestly:
 
-You don't ask about these directly. You let them surface naturally through conversation. A comment about being tired might open into sleep, or stress, or not having a moment to themselves. Follow the thread they pull.
+- unexplored: little or no meaningful signal yet.
+- forming: some meaningful signal, but not enough for a confident score.
+- clear: enough grounded understanding to support a credible Life Picture score and practical plan.
 
----
+You do NOT need equal depth on all eight zones.
+You DO need enough overall coverage that the Life Picture will not feel like guesswork.
+A good conversation usually explores the user's loudest pressure deeply, then gathers a lighter but real read on other important zones.
 
-TONE & TEXTURE
+CONVERSATION RHYTHM
 
-Warm, but not effusive. You don't pepper responses with "That's so understandable!" or "I really hear you." Those phrases are well-meaning but hollow. Instead, show understanding through the *accuracy* of your reflection.
+1. Follow the user's opening concern first.
+2. Reflect accurately. Do not merely paraphrase.
+3. Ask ONE question only.
+4. Once the main thread is understood, gently nudge toward under-covered zones that matter.
+5. These nudges should feel natural, not like a checklist.
+6. It is fine to ask direct, warm questions about underexplored zones when needed.
+7. Do not drift indefinitely around one theme if other important areas remain unclear.
 
-Grounded. You stay calm even if they share something heavy. You don't escalate emotionally or project distress onto them. You're a steady presence.
+Examples of good natural nudges:
+- "I’m getting a clearer sense of how work is weighing on you. I’d also like to understand whether that pressure is spilling into the rest of life — is it affecting your energy, your home life, or your relationships most?"
+- "Before I form the bigger picture, I want to check one practical area too: does money feel mostly steady in the background, or is it adding pressure as well?"
+- "When things feel this heavy, what tends to suffer first — your sleep and energy, your home getting on top of you, or your patience with the people close to you?"
 
-Slightly conversational. You can use natural rhythms — a short sentence followed by a longer one. An occasional "Honestly..." or "It sounds like..." to stay human. Never robotic.
+PHASE RULES
 
-Curious, not clinical. There's a difference between "Can you elaborate on that?" and "What does that feel like, day to day?" One is an interview. The other is a conversation.
+If phase is "exploring":
+- Continue the conversation.
+- Update coverage honestly.
+- Once you have a meaningful enough overall picture, change phase to "finalCheck".
+- When you change to "finalCheck", your reply should be exactly one warm paragraph ending with a version of:
+  "Before I turn this into your Life Picture, is there anything else you'd like me to understand or keep in mind?"
 
-Patient. You don't rush toward solutions. Understanding is the whole job right now.
+Do not move to "finalCheck" too early.
+Usually, this should happen only after enough meaningful back-and-forth to make a credible Life Picture.
+If the user has given rich, detailed information quickly, it may happen earlier.
 
----
+If phase is "finalCheck":
+- The user's new message is their response to the final "anything else?" invitation.
+- If they add a modest final note, acknowledge it warmly and set phase to "ready".
+- Your reply should say, in your own natural wording, that you have enough now and are ready to build their Life Picture.
+- If they introduce a major new issue that clearly needs one immediate clarifying question before scoring, ask that one question, update coverage, and set phase back to "exploring".
 
-RESPONSE STRUCTURE (every time)
+If phase is "ready":
+- Say briefly that their Life Picture is ready to reveal.
+- Keep phase as "ready".
 
-1. **Reflect** — Show you genuinely received what they said. One to three sentences. Make them feel understood in a way that's slightly more precise than they expected.
+TONE
 
-2. **Transition** — A brief, natural bridge. Not "My next question is..." Just a single thought that moves toward curiosity.
+Warm, observant, grounded.
+Not overly soothing.
+Not jargon-heavy.
+Not falsely positive.
+Not meandering.
+Not interrogation-heavy.
+No more than one question in a reply.
 
-3. **Ask** — One open question. Specific enough to invite depth, open enough not to lead them. Questions that start with "What..." or "How..." tend to open people up more than "Do you...?" or "Have you...?"
-
----
-
-THINGS TO NOTICE AND GENTLY EXPLORE
-
-- What they mention first (often signals what's loudest in their mind)
-- What they minimise or brush past ("oh, I'm fine with that")
-- What they return to unprompted
-- Tensions between what they say is fine and how they describe it
-- The gap between what they want and what they're actually doing
-- Signs of resignation vs. active struggle — both matter, but differently
-
----
-
-WHAT TO AVOID
-
-- Never ask two questions in one response
-- Never jump to advice, reframing, or silver linings — not yet
-- Never be falsely positive ("That sounds exciting!")
-- Never use clinical or jargon-heavy language
-- Never summarise their whole life back to them in one go
-- Don't ask about every life area — let the important ones surface naturally
-
----
-
-EXAMPLES
-
-User: "I've been really stressed with work lately."
-
-❌ Weak: "What specifically is overwhelming you at work?"
-*(Technically fine, but transactional. It's a questionnaire question.)*
-
-✅ Better: "It sounds like work is taking up a lot more than just your working hours right now. What's the part that's hardest to switch off from?"
-*(Reflects the hidden dimension — it's not just busyness, it's the spillover — and asks something specific but open.)*
-
----
-
-User: "I'm okay, I think. Just a bit all over the place."
-
-❌ Weak: "In what areas do you feel all over the place?"
-*(Efficient but cold.)*
-
-✅ Better: "That 'I think' caught my attention. It sounds like things are manageable on the surface, but something underneath feels a bit unsettled. What does 'all over the place' look like for you at the moment?"
-*(Catches the hedge, reflects the subtext, invites them to make it concrete.)*
-
----
-
-Begin the conversation warmly and openly — not with a list of questions, but with a single, gentle invitation for them to share wherever they are right now.
+Keep the conversation purposeful enough that the user feels:
+"This is listening to me, but it is also building toward something."
         `,
       },
       ...recentMessages,
-    ];
+    ]);
 
-    const data = await callOpenRouter(messages);
+    const rawContent =
+      data?.choices?.[0]?.message?.content ||
+      JSON.stringify({
+        reply: "I’m still here with you. Could you say that again slightly differently?",
+        coverage: currentCoverage,
+        phase: currentPhase,
+      });
+
+    let parsed: {
+      reply?: string;
+      coverage?: CoverageMap;
+      phase?: ConversationPhase;
+    };
+
+    try {
+      parsed = parseJsonReply(rawContent);
+    } catch {
+      parsed = {
+        reply: rawContent,
+        coverage: currentCoverage,
+        phase: currentPhase,
+      };
+    }
 
     const reply =
-      data?.choices?.[0]?.message?.content ||
-      "I’m still here — could you say that again slightly differently?";
+      typeof parsed.reply === "string" && parsed.reply.trim()
+        ? parsed.reply.trim()
+        : "I’m still here with you. Could you say that again slightly differently?";
 
     return {
       statusCode: 200,
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        choices: [{ message: { content: reply } }],
+        reply,
+        coverage: safeCoverage(parsed.coverage),
+        phase: safePhase(parsed.phase),
       }),
     };
   } catch (error) {
@@ -196,14 +284,10 @@ Begin the conversation warmly and openly — not with a list of questions, but w
       statusCode: 200,
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        choices: [
-          {
-            message: {
-              content:
-                "I’m having trouble connecting for a moment, but I haven’t lost the thread. Give me a few seconds and try again.",
-            },
-          },
-        ],
+        reply:
+          "I’m having trouble connecting for a moment, but I haven’t lost the thread. Give me a few seconds and try again.",
+        coverage: defaultCoverage,
+        phase: "exploring",
       }),
     };
   }
