@@ -1078,4 +1078,450 @@ textarea:disabled {
   margin-bottom: 14px;
 }
 
+/* Premium 30-day plan */
+
+.premium-plan-card {
+  max-width: 1160px;
+  padding: 0;
+  overflow: hidden;
+  background: #fffaf3;
+  border: 1px solid rgba(28, 43, 30, 0.14);
+  box-shadow: 0 34px 110px rgba(28, 43, 30, 0.18);
+}
+
+.premium-plan-hero {
+  position: relative;
+  padding: clamp(34px, 6vw, 78px);
+  color: #f8efe1;
+  background:
+    linear-gradient(135deg, rgba(28, 43, 30, 0.98), rgba(43, 62, 45, 0.96)),
+    #1c2b1e;
+}
+
+.premium-plan-hero::after {
+  content: "";
+  position: absolute;
+  inset: auto clamp(24px, 5vw, 58px) 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(232, 181, 112, 0.8), transparent);
+}
+
+.premium-plan-kicker,
+.premium-plan-meta,
+.premium-plan-timeline,
+.premium-priority-item,
+.premium-week-heading,
+.premium-action-card,
+.premium-week-footer,
+.premium-plan-actions {
+  display: flex;
+}
+
+.premium-plan-kicker {
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 30px;
+  color: #e8b570;
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.premium-plan-kicker em {
+  border: 1px solid rgba(232, 181, 112, 0.46);
+  border-radius: 999px;
+  padding: 8px 12px;
+  color: #fff7e8;
+  font-style: normal;
+  letter-spacing: 0.12em;
+}
+
+.premium-plan-card h2 {
+  max-width: 900px;
+  margin-bottom: 22px;
+  color: #fffaf3;
+  font-size: clamp(42px, 6vw, 78px);
+  line-height: 0.98;
+}
+
+.premium-plan-subtitle {
+  max-width: 760px;
+  margin: 0;
+  color: rgba(255, 250, 243, 0.78);
+  font-size: clamp(18px, 2vw, 24px);
+  line-height: 1.55;
+}
+
+.premium-plan-meta {
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 30px;
+}
+
+.premium-plan-meta span {
+  border: 1px solid rgba(255, 250, 243, 0.16);
+  border-radius: 999px;
+  background: rgba(255, 250, 243, 0.08);
+  padding: 9px 13px;
+  color: rgba(255, 250, 243, 0.84);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.premium-plan-opening {
+  max-width: 840px;
+  margin-top: 42px;
+  padding: 24px 0 0;
+  border-top: 1px solid rgba(232, 181, 112, 0.32);
+}
+
+.premium-plan-opening p {
+  margin: 0;
+  color: rgba(255, 250, 243, 0.88);
+  font-size: clamp(18px, 2vw, 22px);
+  line-height: 1.7;
+}
+
+.premium-plan-timeline {
+  position: relative;
+  margin: 0;
+  padding: 26px clamp(24px, 6vw, 70px);
+  gap: 14px;
+  justify-content: space-between;
+  background: #f1e5d4;
+  border-bottom: 1px solid rgba(28, 43, 30, 0.1);
+}
+
+.premium-timeline-item {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  min-width: 0;
+  flex: 1;
+  text-align: center;
+}
+
+.premium-timeline-item span {
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: #1c2b1e;
+  color: #fffaf3;
+  font-weight: 900;
+}
+
+.premium-timeline-item strong {
+  color: #3a342c;
+  font-size: 13px;
+}
+
+.premium-plan-context,
+.premium-plan-weeks,
+.premium-plan-closing,
+.premium-plan-actions {
+  margin: clamp(24px, 5vw, 58px);
+}
+
+.premium-plan-context {
+  display: grid;
+  grid-template-columns: minmax(0, 1.08fr) minmax(300px, 0.92fr);
+  gap: 22px;
+}
+
+.premium-pattern-card,
+.premium-priorities-card,
+.premium-week-card,
+.premium-plan-closing {
+  border: 1px solid rgba(28, 43, 30, 0.11);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.premium-pattern-card,
+.premium-priorities-card {
+  padding: clamp(24px, 4vw, 36px);
+}
+
+.premium-pattern-card h3,
+.premium-priorities-card h3,
+.premium-week-card h3 {
+  color: #1c2b1e;
+}
+
+.premium-pattern-card p:not(.eyebrow),
+.premium-priorities-card p,
+.premium-week-card p,
+.premium-plan-closing p:not(.eyebrow) {
+  color: #5c5c52;
+  line-height: 1.65;
+}
+
+.premium-priority-list {
+  display: grid;
+  gap: 14px;
+}
+
+.premium-priority-item {
+  align-items: flex-start;
+  gap: 14px;
+  padding: 16px 0;
+  border-top: 1px solid rgba(28, 43, 30, 0.09);
+}
+
+.premium-priority-item span,
+.premium-action-card > span {
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  font-weight: 900;
+}
+
+.premium-priority-item span {
+  width: 30px;
+  height: 30px;
+  background: #e8b570;
+  color: #1c2b1e;
+}
+
+.premium-priority-item h4,
+.premium-action-card h4 {
+  margin: 0 0 7px;
+  color: #1c2b1e;
+  font-size: 18px;
+}
+
+.premium-priority-item p,
+.premium-action-card p {
+  margin: 0;
+}
+
+.premium-plan-weeks {
+  display: grid;
+  gap: 26px;
+}
+
+.premium-week-card {
+  overflow: hidden;
+}
+
+.premium-week-heading {
+  align-items: center;
+  gap: 18px;
+  padding: clamp(22px, 4vw, 34px);
+  background: #1c2b1e;
+}
+
+.premium-week-heading > span {
+  width: 76px;
+  height: 76px;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(232, 181, 112, 0.42);
+  border-radius: 50%;
+  color: #fffaf3;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 34px;
+  line-height: 1;
+}
+
+.premium-week-heading > span em {
+  align-self: end;
+  color: #e8b570;
+  font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+  font-size: 10px;
+  font-style: normal;
+  font-weight: 900;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.premium-week-heading h3 {
+  margin-bottom: 8px;
+  color: #fffaf3;
+  font-size: clamp(30px, 4vw, 46px);
+}
+
+.premium-week-heading p {
+  margin: 0;
+  color: rgba(255, 250, 243, 0.76);
+  font-size: 17px;
+}
+
+.premium-week-why {
+  margin: 0;
+  padding: 24px clamp(22px, 4vw, 34px);
+  border-bottom: 1px solid rgba(28, 43, 30, 0.09);
+  background: #f8efe1;
+}
+
+.premium-week-why strong,
+.premium-reflection strong {
+  display: block;
+  margin-bottom: 8px;
+  color: #8b5838;
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.premium-week-why p {
+  margin: 0;
+}
+
+.premium-action-list {
+  display: grid;
+  gap: 0;
+  padding: 4px clamp(18px, 4vw, 30px);
+}
+
+.premium-action-card {
+  align-items: flex-start;
+  gap: 16px;
+  padding: 22px 0;
+  border-bottom: 1px solid rgba(28, 43, 30, 0.09);
+}
+
+.premium-action-card:last-child {
+  border-bottom: 0;
+}
+
+.premium-action-card > span {
+  width: 34px;
+  height: 34px;
+  background: #1c2b1e;
+  color: #fffaf3;
+  font-size: 13px;
+}
+
+.premium-first-step {
+  display: block;
+  margin-top: 14px;
+  border-left: 3px solid #e8b570;
+  background: #fff7e8;
+  padding: 12px 14px;
+  border-radius: 0 12px 12px 0;
+  color: #3a342c;
+  font-size: 14px;
+  line-height: 1.55;
+}
+
+.premium-first-step strong {
+  color: #1c2b1e;
+}
+
+.premium-week-footer {
+  gap: 16px;
+  padding: clamp(18px, 4vw, 30px);
+  background: #f1e5d4;
+}
+
+.premium-reflection,
+.premium-encouragement {
+  flex: 1;
+  min-width: 0;
+}
+
+.premium-reflection p,
+.premium-encouragement p {
+  margin: 0;
+}
+
+.premium-encouragement {
+  display: grid;
+  align-items: center;
+  border-left: 1px solid rgba(28, 43, 30, 0.12);
+  padding-left: 18px;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 19px;
+}
+
+.premium-plan-closing {
+  padding: clamp(24px, 4vw, 38px);
+  background:
+    linear-gradient(135deg, rgba(232, 181, 112, 0.18), transparent 42%),
+    #fffaf3;
+}
+
+.premium-plan-closing p:not(.eyebrow) {
+  margin: 0;
+  font-size: 18px;
+}
+
+.premium-plan-actions {
+  justify-content: flex-end;
+  padding-top: 0;
+}
+
+@media (max-width: 860px) {
+  .premium-plan-context,
+  .premium-week-footer {
+    grid-template-columns: 1fr;
+  }
+
+  .premium-plan-context {
+    display: grid;
+  }
+
+  .premium-plan-timeline {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .premium-week-footer {
+    display: grid;
+  }
+
+  .premium-encouragement {
+    border-left: 0;
+    border-top: 1px solid rgba(28, 43, 30, 0.12);
+    padding: 16px 0 0;
+  }
+}
+
+@media (max-width: 640px) {
+  .premium-plan-card {
+    border-radius: 24px;
+  }
+
+  .premium-plan-hero,
+  .premium-plan-context,
+  .premium-plan-weeks,
+  .premium-plan-closing,
+  .premium-plan-actions {
+    margin: 0;
+  }
+
+  .premium-plan-context,
+  .premium-plan-weeks,
+  .premium-plan-closing,
+  .premium-plan-actions {
+    padding: 22px;
+  }
+
+  .premium-plan-context {
+    gap: 16px;
+  }
+
+  .premium-plan-timeline {
+    padding: 22px;
+  }
+
+  .premium-week-heading {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .premium-plan-actions button {
+    width: 100%;
+  }
+}
+
       

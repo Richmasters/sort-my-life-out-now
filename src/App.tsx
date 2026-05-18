@@ -836,18 +836,38 @@ Use this naturally. Do not list it back mechanically.
         />
       )}
 
-            {step === "actionPlan" && actionPlan && (
+      {step === "actionPlan" && actionPlan && (
         <section className="card results-card premium-plan-card">
           <div className="premium-plan-hero">
-            <p className="eyebrow">Your 30-day plan</p>
+            <div className="premium-plan-kicker">
+              <span>Premium reset plan</span>
+              <em>30 days</em>
+            </div>
 
             <h2>{actionPlan.title}</h2>
 
             <p className="premium-plan-subtitle">{actionPlan.subtitle}</p>
 
+            <div className="premium-plan-meta">
+              <span>
+                Prepared for {onboarding.name || "you"}
+              </span>
+              <span>Built from your Life Picture</span>
+              <span>Four focused weeks</span>
+            </div>
+
             <div className="premium-plan-opening">
               <p>{actionPlan.openingNote}</p>
             </div>
+          </div>
+
+          <div className="premium-plan-timeline" aria-label="30-day plan timeline">
+            {actionPlan.weeks.map((week) => (
+              <div className="premium-timeline-item" key={`timeline-${week.week}`}>
+                <span>{week.week}</span>
+                <strong>{week.theme}</strong>
+              </div>
+            ))}
           </div>
 
           <div className="premium-plan-context">
@@ -877,7 +897,10 @@ Use this naturally. Do not list it back mechanically.
             {actionPlan.weeks.map((week) => (
               <article className="premium-week-card" key={week.week}>
                 <div className="premium-week-heading">
-                  <span>Week {week.week}</span>
+                  <span>
+                    <em>Week</em>
+                    {week.week}
+                  </span>
                   <div>
                     <h3>{week.theme}</h3>
                     <p>{week.focus}</p>
@@ -896,7 +919,7 @@ Use this naturally. Do not list it back mechanically.
                       <div>
                         <h4>{action.title}</h4>
                         <p>{action.detail}</p>
-                        <small>
+                        <small className="premium-first-step">
                           <strong>First step:</strong> {action.firstStep}
                         </small>
                       </div>
@@ -927,7 +950,8 @@ Use this naturally. Do not list it back mechanically.
             <button onClick={() => setStep("wheel")}>Back to Life Picture</button>
           </div>
         </section>
-      )}    </main>
+      )}
+    </main>
   );
 }
 
