@@ -1055,3 +1055,25 @@ textarea:disabled {
     padding: 7px 10px;
   }
 }
+
+/* Make the conversation screen more compact and keep the reply area visible */
+
+.chat-card h2 {
+  font-size: clamp(28px, 3.4vw, 44px);
+  line-height: 1.08;
+  margin-bottom: 18px;
+}
+
+.chat-card .eyebrow {
+  margin-bottom: 10px;
+}
+
+.chat-card {
+  height: min(90vh, 980px);
+}
+
+.messages {
+  flex: 1;
+  min-height: 220px;
+  margin-bottom: 14px;
+}
