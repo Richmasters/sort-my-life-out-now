@@ -54,8 +54,9 @@ async function callOpenRouter(messages: any[], attempt = 1): Promise<any> {
         },
         body: JSON.stringify({
           model: "inception/mercury-2",
-          temperature: 0.45,
-          max_tokens: 900,
+          temperature: 0.35,
+          max_tokens: 650,
+          response_format: { type: "json_object" },
           messages,
         }),
       },
@@ -102,7 +103,59 @@ function safePhase(value: unknown): ConversationPhase {
 
 function parseJsonReply(content: string) {
   const cleaned = content.replace(/```json|```/g, "").trim();
-  return JSON.parse(cleaned);
+  try {
+    return JSON.parse(cleaned);
+  } catch {
+    const start = cleaned.indexOf("{");
+    const end = cleaned.lastIndexOf("}");
+
+    if (start >= 0 && end > start) {
+      return JSON.parse(cleaned.slice(start, end + 1));
+    }
+
+    throw new Error("No valid JSON object found in chat response");
+  }
+}
+
+function looksLikeJson(value: string) {
+  const trimmed = value.trim();
+  return (
+    trimmed.startsWith("{") ||
+    trimmed.startsWith("[") ||
+    trimmed.includes('"reply"') ||
+    trimmed.includes('"coverage"') ||
+    trimmed.includes('"phase"')
+  );
+}
+
+function countRealUserMessages(messages: any[]) {
+  return messages.filter((message) => {
+    if (message?.role !== "user" || typeof message?.content !== "string") {
+      return false;
+    }
+
+    return !message.content.includes("User context from onboarding:");
+  }).length;
+}
+
+function applyConversationGuard(
+  phase: ConversationPhase,
+  coverage: CoverageMap,
+  userMessageCount: number,
+  currentPhase: ConversationPhase
+): ConversationPhase {
+  if (currentPhase === "finalCheck") return "ready";
+  if (phase !== "exploring") return phase;
+
+  const coveredCount = Object.values(coverage).filter(
+    (state) => state === "forming" || state === "clear"
+  ).length;
+
+  if (userMessageCount >= 7 || (userMessageCount >= 5 && coveredCount >= 4)) {
+    return "finalCheck";
+  }
+
+  return phase;
 }
 
 export async function handler(event: any) {
@@ -120,6 +173,7 @@ export async function handler(event: any) {
     const recentMessages = incomingMessages.slice(-18);
     const currentCoverage = safeCoverage(body.coverage);
     const currentPhase = safePhase(body.phase);
+    const userMessageCount = countRealUserMessages(incomingMessages);
 
     const data = await callOpenRouter([
       {
@@ -137,6 +191,8 @@ You must return ONLY valid JSON.
 No markdown.
 No explanation.
 No code block.
+Never show the JSON to the user inside the reply field.
+The reply field must contain only the warm conversational message the user should see.
 
 Return exactly this shape:
 
@@ -193,6 +249,7 @@ CONVERSATION RHYTHM
 5. These nudges should feel natural, not like a checklist.
 6. It is fine to ask direct, warm questions about underexplored zones when needed.
 7. Do not drift indefinitely around one theme if other important areas remain unclear.
+8. Keep replies under 95 words unless the user is in obvious distress.
 
 Examples of good natural nudges:
 - "I’m getting a clearer sense of how work is weighing on you. I’d also like to understand whether that pressure is spilling into the rest of life — is it affecting your energy, your home life, or your relationships most?"
@@ -205,6 +262,7 @@ If phase is "exploring":
 - Continue the conversation.
 - Update coverage honestly.
 - Once you have a meaningful enough overall picture, change phase to "finalCheck".
+- By 5 to 7 user replies, you should normally be moving to "finalCheck" unless the conversation is unusually thin.
 - When you change to "finalCheck", your reply should be exactly one warm paragraph ending with a version of:
   "Before I turn this into your Life Picture, is there anything else you'd like me to understand or keep in mind?"
 
@@ -257,14 +315,25 @@ Keep the conversation purposeful enough that the user feels:
       parsed = parseJsonReply(rawContent);
     } catch {
       parsed = {
-        reply: rawContent,
+        reply:
+          "I'm here with you. I've got the thread, but I want to keep this useful rather than messy: what feels most important for me to understand before I build your Life Picture?",
         coverage: currentCoverage,
         phase: currentPhase,
       };
     }
 
+    const nextCoverage = safeCoverage(parsed.coverage);
+    const nextPhase = applyConversationGuard(
+      safePhase(parsed.phase),
+      nextCoverage,
+      userMessageCount,
+      currentPhase
+    );
+
     const reply =
-      typeof parsed.reply === "string" && parsed.reply.trim()
+      typeof parsed.reply === "string" &&
+      parsed.reply.trim() &&
+      !looksLikeJson(parsed.reply)
         ? parsed.reply.trim()
         : "I’m still here with you. Could you say that again slightly differently?";
 
@@ -273,8 +342,8 @@ Keep the conversation purposeful enough that the user feels:
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         reply,
-        coverage: safeCoverage(parsed.coverage),
-        phase: safePhase(parsed.phase),
+        coverage: nextCoverage,
+        phase: nextPhase,
       }),
     };
   } catch (error) {
