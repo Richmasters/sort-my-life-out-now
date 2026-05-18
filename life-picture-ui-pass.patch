@@ -1,0 +1,134 @@
+diff --git a/src/App.tsx b/src/App.tsx
+index 0e6a5df..f9e8c41 100644
+--- a/src/App.tsx
++++ b/src/App.tsx
+@@ -106,7 +106,7 @@ const fallbackActionPlan: ActionPlan = {
+     {
+       week: 4,
+       theme: "Review and refine",
+       focus: "Notice what changed and decide what comes next.",
+       actions: [
+-        "Repeat your Wheel of Life audit.",
++        "Revisit your Life Picture and notice what has shifted.",
+         "Keep what worked and drop what felt unrealistic.",
+         "Choose one focus area for the next month.",
+       ],
+@@ -254,7 +254,7 @@ export default function App() {
+ Name: ${onboarding.name || "Not given"}
+ Age range: ${onboarding.ageRange}
+ Current feeling: ${onboarding.currentFeeling}
+ Biggest pressure area: ${onboarding.pressureArea}
+-What they want help with: ${onboarding.helpWanted || "Not given"}
++What they most hope to come away with today: ${onboarding.helpWanted || "Not given"}
+
+ Use this naturally. Do not list it back mechanically.
+     `.trim();
+@@ -355,13 +355,13 @@ export default function App() {
+
+           <p className="intro">
+             Have a warm, intelligent conversation about what’s really going on.
+-            Then get your personal Wheel of Life, five quick wins, and a clearer
++            Then get your personal Life Picture, five quick wins, and a clearer
+             sense of what to do next.
+           </p>
+
+           <div className="hero-actions desktop-hero-actions">
+             <button onClick={() => setStep("onboarding")}>
+-              Start your life audit
++              Start my Life Picture
+             </button>
+             <span>No judgement. No noise. Just clarity.</span>
+           </div>
+@@ -369,13 +369,6 @@ export default function App() {
+           <div className="landing-panels">
+             <div>
+-<div className="hero-actions mobile-hero-actions">
+-  <button onClick={() => setStep("onboarding")}>
+-    Start your life audit
+-  </button>
+-  <span>No judgement. No noise. Just clarity.</span>
+-</div>
+               <strong>1</strong>
+               <h3>Talk it through</h3>
+               <p>
+@@ -403,6 +396,15 @@ export default function App() {
+             </div>
+           </div>
+
++          <div className="hero-actions mobile-hero-actions">
++            <button onClick={() => setStep("onboarding")}>
++              Start my Life Picture
++            </button>
++            <span>No judgement. No noise. Just clarity.</span>
++          </div>
++
+           <div className="life-area-strip">
+             {zones.map((zone) => (
+               <span key={zone.label}>{zone.label}</span>
+@@ -489,7 +491,19 @@ export default function App() {
+                 <option>Purpose</option>
+               </select>
+             </label>
+
+-            
++            <label>
++              What would you most like to come away with today?
++              <textarea
++                value={onboarding.helpWanted}
++                onChange={(event) =>
++                  setOnboarding({
++                    ...onboarding,
++                    helpWanted: event.target.value,
++                  })
++                }
++                placeholder="A clearer head, a practical plan, help knowing where to start..."
++              />
++            </label>
+
+             <button type="button" onClick={() => setStep("conversation")}>
+               Continue to conversation
+@@ -528,7 +542,7 @@ export default function App() {
+
+           {canReveal && (
+             <button className="reveal-button" onClick={analyseLife}>
+-              Reveal my Wheel of Life
++              Reveal my Life Picture
+             </button>
+           )}
+
+@@ -643,7 +657,7 @@ function ResultsScreen({
+
+   return (
+     <section className="card wheel-card results-card">
+-      <p className="eyebrow">Your Life Audit</p>
++      <p className="eyebrow">Your Life Picture</p>
+
+       <h2>
+         {onboarding.name
+@@ -651,6 +665,8 @@ function ResultsScreen({
+           : "Here’s the first clear picture."}
+       </h2>
+
++      <LifeWheel scores={result.scores} insights={result.insights} />
++
+       <div className="results-summary">
+         <div className="overall-score">
+           <span>Overall life score</span>
+@@ -678,8 +694,6 @@ function ResultsScreen({
+         </div>
+       </div>
+
+-      <LifeWheel scores={result.scores} insights={result.insights} />
+-
+       <div className="focus-order">
+         <div>
+           <p className="eyebrow">Your focus order</p>
+@@ -738,7 +752,7 @@ function ResultsScreen({
+
+       <div className="premium-unlock">
+         <p className="eyebrow">Premium preview</p>
+-        <h3>Turn this into a 30-day action plan</h3>
++        <h3>Turn your Life Picture into a 30-day action plan</h3>
+         <p>
+           Generate a personalised month-long reset plan based on your scores,
+           conversation and quick wins.
