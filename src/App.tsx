@@ -345,9 +345,12 @@ Use this naturally. Do not list it back mechanically.
       const data = await response.json();
 
       const aiReply =
-        typeof data?.reply === "string" && data.reply.trim()
-          ? data.reply.trim()
-          : "I’m here with you. Tell me a little more about what feels hardest right now.";
+  typeof data?.reply === "string" && data.reply.trim()
+    ? data.reply.trim()
+    : typeof data?.choices?.[0]?.message?.content === "string" &&
+        data.choices[0].message.content.trim()
+      ? data.choices[0].message.content.trim()
+      : "I’m here with you. Tell me a little more about what feels hardest right now.";
 
       setMessages((current) => [
         ...current,
