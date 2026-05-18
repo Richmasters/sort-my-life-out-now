@@ -127,7 +127,7 @@ const fallbackActionPlan: ActionPlan = {
       theme: "Review and refine",
       focus: "Notice what changed and decide what comes next.",
       actions: [
-        "Repeat your Wheel of Life audit.",
+        "Revisit your Life Picture and notice what has shifted.",
         "Keep what worked and drop what felt unrealistic.",
         "Choose one focus area for the next month.",
       ],
@@ -263,7 +263,7 @@ Name: ${onboarding.name || "Not given"}
 Age range: ${onboarding.ageRange}
 Current feeling: ${onboarding.currentFeeling}
 Biggest pressure area: ${onboarding.pressureArea}
-What they want help with: ${onboarding.helpWanted || "Not given"}
+What they most hope to come away with today: ${onboarding.helpWanted || "Not given"}
 
 Use this naturally. Do not list it back mechanically.
     `.trim();
@@ -393,25 +393,19 @@ Use this naturally. Do not list it back mechanically.
 
           <p className="intro">
             Have a warm, intelligent conversation about what’s really going on.
-            Then get your personal Wheel of Life, five quick wins, and a clearer
+            Then get your personal Life Picture, five quick wins, and a clearer
             sense of what to do next.
           </p>
 
           <div className="hero-actions desktop-hero-actions">
             <button onClick={() => setStep("onboarding")}>
-              Start your life audit
+              Start my Life Picture
             </button>
             <span>No judgement. No noise. Just clarity.</span>
           </div>
 
           <div className="landing-panels">
             <div>
-<div className="hero-actions mobile-hero-actions">
-  <button onClick={() => setStep("onboarding")}>
-    Start your life audit
-  </button>
-  <span>No judgement. No noise. Just clarity.</span>
-</div>
               <strong>1</strong>
               <h3>Talk it through</h3>
               <p>
@@ -433,10 +427,17 @@ Use this naturally. Do not list it back mechanically.
               <strong>3</strong>
               <h3>Get your next move</h3>
               <p>
-                Reveal your Wheel of Life, then leave with five practical quick
+                Reveal your Life Picture, then leave with five practical quick
                 wins you can actually do.
               </p>
             </div>
+          </div>
+
+          <div className="hero-actions mobile-hero-actions">
+            <button onClick={() => setStep("onboarding")}>
+              Start my Life Picture
+            </button>
+            <span>No judgement. No noise. Just clarity.</span>
           </div>
 
           <div className="life-area-strip">
@@ -534,7 +535,19 @@ Use this naturally. Do not list it back mechanically.
               </select>
             </label>
 
-            
+            <label>
+              What would you most like to come away with today?
+              <textarea
+                value={onboarding.helpWanted}
+                onChange={(event) =>
+                  setOnboarding({
+                    ...onboarding,
+                    helpWanted: event.target.value,
+                  })
+                }
+                placeholder="A clearer head, a practical plan, help knowing where to start..."
+              />
+            </label>
 
             <button type="button" onClick={() => setStep("conversation")}>
               Continue to conversation
@@ -573,7 +586,7 @@ Use this naturally. Do not list it back mechanically.
 
           {canReveal && (
             <button className="reveal-button" onClick={analyseLife}>
-              Reveal my Wheel of Life
+              Reveal my Life Picture
             </button>
           )}
 
@@ -596,7 +609,7 @@ Use this naturally. Do not list it back mechanically.
 
       {step === "analysing" && (
         <section className="card hero">
-          <p className="eyebrow">Analysing your life</p>
+          <p className="eyebrow">Creating your Life Picture</p>
           <h2>Building your first clear picture...</h2>
 
           <div className="message assistant typing analysing-dots">
@@ -646,7 +659,7 @@ Use this naturally. Do not list it back mechanically.
             ))}
           </div>
 
-          <button onClick={() => setStep("wheel")}>Back to results</button>
+          <button onClick={() => setStep("wheel")}>Back to Life Picture</button>
         </section>
       )}
     </main>
@@ -675,13 +688,15 @@ function ResultsScreen({
 
   return (
     <section className="card wheel-card results-card">
-      <p className="eyebrow">Your Life Audit</p>
+      <p className="eyebrow">Your Life Picture</p>
 
       <h2>
         {onboarding.name
           ? `Here’s the first clear picture, ${onboarding.name}.`
           : "Here’s the first clear picture."}
       </h2>
+
+      <LifeWheel scores={result.scores} insights={result.insights} />
 
       <div className="results-summary">
         <div className="overall-score">
@@ -704,8 +719,6 @@ function ResultsScreen({
           <p>{priorityStatus.message}</p>
         </div>
       </div>
-
-      <LifeWheel scores={result.scores} insights={result.insights} />
 
       <div className="focus-order">
         <div>
@@ -759,7 +772,7 @@ function ResultsScreen({
 
       <div className="premium-unlock">
         <p className="eyebrow">Premium preview</p>
-        <h3>Turn this into a 30-day action plan</h3>
+        <h3>Turn your Life Picture into a 30-day action plan</h3>
         <p>
           Generate a personalised month-long reset plan based on your scores,
           conversation and quick wins.
@@ -801,7 +814,7 @@ function LifeWheel({
   const activeColour = getScoreColour(activeScore);
   const activeInsight =
     insights?.[active.label] ||
-    "This area is part of your current life picture. The score is not a judgement — it is a starting point for clearer action.";
+    "This area is part of your current Life Picture. The score is not a judgement — it is a starting point for clearer action.";
 
   return (
     <div className="life-wheel-wrap">
@@ -909,13 +922,3 @@ function LifeWheel({
         </div>
 
         <div className="zone-status" style={{ color: activeColour }}>
-          {activeStatus.label}
-        </div>
-
-        <p>{activeInsight}</p>
-
-        <p className="encouragement">{activeStatus.encouragement}</p>
-      </div>
-    </div>
-  );
-}
