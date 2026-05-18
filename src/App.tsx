@@ -920,5 +920,15 @@ function LifeWheel({
           <strong>{active.label}</strong>
           <em style={{ color: activeColour }}>{activeScore}/100</em>
         </div>
-
         <div className="zone-status" style={{ color: activeColour }}>
+          {activeStatus.label}
+        </div>
+
+        <p>{activeInsight}</p>
+
+        <p className="encouragement">{activeStatus.encouragement}</p>
+      </div>
+    </div>
+  );
+}
+        
