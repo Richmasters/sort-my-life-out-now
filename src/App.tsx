@@ -753,28 +753,38 @@ function LifePictureProgress({
   coverage: CoverageMap;
   progressMessage: string;
 }) {
+  const states = Object.values(coverage);
+  const clearCount = states.filter((state) => state === "clear").length;
+  const formingCount = states.filter((state) => state === "forming").length;
+  const unexploredCount = states.filter((state) => state === "unexplored").length;
+
+  const summaryParts = [
+    clearCount > 0 ? `${clearCount} clear enough` : null,
+    formingCount > 0 ? `${formingCount} taking shape` : null,
+    unexploredCount > 0 ? `${unexploredCount} still to explore` : null,
+  ].filter(Boolean);
+
   return (
-    <div className="coverage-panel">
-      <div className="coverage-heading">
+    <div className="coverage-strip">
+      <div className="coverage-strip-copy">
         <p className="eyebrow">Your Life Picture is taking shape</p>
         <p>{progressMessage}</p>
+        <small>{summaryParts.join(" · ")}</small>
       </div>
 
-      <div className="coverage-grid">
+      <div className="coverage-pills" aria-label="Life Picture conversation progress">
         {zones.map((zone) => {
           const state = coverage[zone.label] || "unexplored";
 
           return (
-            <div className={`coverage-item ${state}`} key={zone.label}>
-              <div className="coverage-item-top">
-                <span>{zone.icon}</span>
-                <strong>{zone.label}</strong>
-                <small>{getCoverageLabel(state)}</small>
-              </div>
-              <div className="coverage-track" aria-hidden="true">
-                <span />
-              </div>
-            </div>
+            <span
+              className={`coverage-pill ${state}`}
+              key={zone.label}
+              title={`${zone.label}: ${getCoverageLabel(state)}`}
+            >
+              <em>{zone.icon}</em>
+              {zone.label}
+            </span>
           );
         })}
       </div>

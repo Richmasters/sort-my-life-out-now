@@ -964,3 +964,94 @@ textarea:disabled {
     margin-bottom: 34px;
   }
 }
+
+/* Compact Life Picture progress strip */
+
+.coverage-strip {
+  background:
+    radial-gradient(circle at top right, rgba(196, 124, 78, 0.12), transparent 42%),
+    #f5f0e8;
+  border: 1px solid rgba(196, 124, 78, 0.2);
+  border-radius: 22px;
+  padding: 16px 18px;
+  margin-bottom: 18px;
+  display: grid;
+  gap: 14px;
+}
+
+.coverage-strip-copy {
+  display: grid;
+  gap: 5px;
+}
+
+.coverage-strip-copy .eyebrow {
+  margin: 0;
+}
+
+.coverage-strip-copy p:not(.eyebrow) {
+  margin: 0;
+  color: #5c5c52;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.coverage-strip-copy small {
+  color: #8b5838;
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.coverage-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.coverage-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border-radius: 999px;
+  border: 1px solid rgba(28, 43, 30, 0.12);
+  background: rgba(255, 255, 255, 0.72);
+  color: #6b685f;
+  padding: 7px 11px;
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.coverage-pill em {
+  font-style: normal;
+}
+
+.coverage-pill.forming {
+  background: rgba(196, 124, 78, 0.14);
+  border-color: rgba(196, 124, 78, 0.35);
+  color: #8b5838;
+}
+
+.coverage-pill.clear {
+  background: #1c2b1e;
+  border-color: #1c2b1e;
+  color: #f5f0e8;
+}
+
+@media (max-width: 700px) {
+  .coverage-strip {
+    padding: 14px;
+    gap: 12px;
+  }
+
+  .coverage-strip-copy p:not(.eyebrow) {
+    font-size: 13px;
+  }
+
+  .coverage-pill {
+    font-size: 11px;
+    padding: 7px 10px;
+  }
+}
