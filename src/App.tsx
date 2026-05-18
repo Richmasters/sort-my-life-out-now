@@ -30,13 +30,27 @@ type Result = {
 
 type ActionPlan = {
   title: string;
-  summary: string;
+  subtitle: string;
+  openingNote: string;
+  patternSummary: string;
+  priorities: {
+    title: string;
+    detail: string;
+  }[];
   weeks: {
     week: number;
     theme: string;
     focus: string;
-    actions: string[];
+    whyThisWeek: string;
+    actions: {
+      title: string;
+      detail: string;
+      firstStep: string;
+    }[];
+    reflectionPrompt: string;
+    encouragement: string;
   }[];
+  closingNote: string;
 };
 
 type Zone = {
@@ -103,52 +117,159 @@ const fallbackResult: Result = {
 };
 
 const fallbackActionPlan: ActionPlan = {
-  title: "Your 30-day reset plan",
-  summary:
-    "A simple, steady plan to reduce pressure and create movement without overwhelming you.",
+  title: "Your 30-Day Life Reset",
+  subtitle:
+    "A calm, practical plan to reduce pressure, create clarity and build steadier momentum.",
+  openingNote:
+    "This is not a demand to overhaul your whole life at once. It is a carefully paced reset: first make things feel more manageable, then clear obvious friction, then build a rhythm that is easier to keep. Small moves, done with intention, can change the emotional weight of a month.",
+  patternSummary:
+    "From what you have shared, the biggest opportunity is to reduce the background pressure that makes everything else feel heavier. When mental noise, practical loose ends and uncertainty stack up together, even simple choices can start to feel draining.",
+  priorities: [
+    {
+      title: "Create breathing room",
+      detail:
+        "Begin by reducing the sense that everything is urgent at once. A little prioritisation will make the next steps feel more possible.",
+    },
+    {
+      title: "Clear one layer of friction",
+      detail:
+        "Choose practical tasks that have been quietly taking up space in your head and move a few of them to done.",
+    },
+    {
+      title: "Build a gentler rhythm",
+      detail:
+        "Introduce small routines that support your energy and attention without becoming another source of pressure.",
+    },
+  ],
   weeks: [
     {
       week: 1,
       theme: "Stabilise",
-      focus: "Reduce noise and create breathing room.",
+      focus: "Make the immediate pressure feel more containable.",
+      whyThisWeek:
+        "The first week is about reducing overwhelm, not achieving perfection. You need a little more room to think before larger change becomes useful.",
       actions: [
-        "Write down the three areas causing the most pressure.",
-        "Choose one small task you can finish today.",
-        "Take one 10-minute walk without your phone.",
+        {
+          title: "Name the three loudest pressures",
+          detail:
+            "Write down the three things taking up the most mental space right now. Keep it brutally simple; the point is to stop carrying them as a vague cloud.",
+          firstStep: "Open a note and write the first pressure in one sentence.",
+        },
+        {
+          title: "Finish one small, lingering task",
+          detail:
+            "Choose a task that has been creating background drag but can realistically be completed in one sitting. Finishing something contained can create a surprising amount of relief.",
+          firstStep: "Pick the smallest task that would make you exhale when done.",
+        },
+        {
+          title: "Protect one pocket of recovery",
+          detail:
+            "Create one short moment this week that is not for solving, catching up or performing. This is not indulgence; it helps reduce the sense of living in permanent reaction mode.",
+          firstStep: "Block 20 minutes in your calendar with no obligation attached.",
+        },
       ],
+      reflectionPrompt:
+        "At the end of the week, ask: what feels even slightly less noisy than it did seven days ago?",
+      encouragement:
+        "A better month starts with one part of life feeling a little less impossible.",
     },
     {
       week: 2,
-      theme: "Clear pressure",
-      focus: "Deal with the most obvious sources of stress.",
+      theme: "Clear friction",
+      focus: "Deal with the things that keep tugging at your attention.",
+      whyThisWeek:
+        "Once there is a little more space, it becomes easier to tackle the practical knots that quietly drain confidence and energy.",
       actions: [
-        "Tackle one life-admin task.",
-        "Review one recurring payment or commitment.",
-        "Have one honest conversation you have been avoiding.",
+        {
+          title: "Hold one focused admin session",
+          detail:
+            "Set aside a contained block of time for bills, forms, messages, bookings or overdue life admin. Do not try to solve all of it; aim to move the most irritating items forward.",
+          firstStep: "Make a five-item admin list before the session starts.",
+        },
+        {
+          title: "Review one source of avoidable pressure",
+          detail:
+            "Look at one commitment, cost, habit or unresolved obligation that no longer feels worth the weight it carries. Decide whether it needs action, a boundary or a clean ending.",
+          firstStep: "Choose the one thing that keeps resurfacing in your mind.",
+        },
+        {
+          title: "Say one clear thing you have been postponing",
+          detail:
+            "If an unspoken request, boundary or clarification is creating tension, prepare a simple honest version. It does not need to be dramatic to be freeing.",
+          firstStep: "Draft the message before deciding whether to send it.",
+        },
       ],
+      reflectionPrompt:
+        "What practical loose end felt bigger in your head than it did once you touched it?",
+      encouragement:
+        "Clearing friction is often less about effort than about finally giving one thing a proper place.",
     },
     {
       week: 3,
       theme: "Build rhythm",
-      focus: "Create repeatable habits that support you.",
+      focus: "Create small repeatable supports for the life you want to feel.",
+      whyThisWeek:
+        "This week turns relief into steadiness. The goal is not a perfect routine; it is to make a few helpful behaviours easier to repeat.",
       actions: [
-        "Pick a simple morning or evening routine.",
-        "Block one weekly reset slot in your calendar.",
-        "Choose one boundary that protects your energy.",
+        {
+          title: "Choose one weekly reset ritual",
+          detail:
+            "Create a short recurring slot to review tasks, calendar pressure and what matters next. A regular reset can stop life from building up silently.",
+          firstStep: "Pick a day and time you could repeat most weeks.",
+        },
+        {
+          title: "Create one energy-protecting boundary",
+          detail:
+            "Decide on one small limit that protects attention, rest or emotional bandwidth. It might be a work cut-off, a slower morning or less immediate responsiveness.",
+          firstStep: "Finish the sentence: 'This week I am less available for…'",
+        },
+        {
+          title: "Repeat the most helpful quick win",
+          detail:
+            "Return to the small action that created the most relief so far and make it part of your ordinary week. Repetition is where insight starts becoming change.",
+          firstStep: "Identify the one action from Weeks 1–2 that actually helped.",
+        },
       ],
+      reflectionPrompt:
+        "Which small behaviour is starting to make life feel more predictable or kinder?",
+      encouragement:
+        "A rhythm does not need to be impressive. It needs to make tomorrow slightly easier.",
     },
     {
       week: 4,
       theme: "Review and refine",
-      focus: "Notice what changed and decide what comes next.",
+      focus: "Notice what shifted and choose what deserves continued attention.",
+      whyThisWeek:
+        "The final week is about learning from the month, not scoring yourself. Some things will have helped, others may need adjusting, and that is useful information.",
       actions: [
-        "Revisit your Life Picture and notice what has shifted.",
-        "Keep what worked and drop what felt unrealistic.",
-        "Choose one focus area for the next month.",
+        {
+          title: "Revisit your Life Picture",
+          detail:
+            "Look back at the areas that felt strongest and most strained. Notice what has changed in feeling, clarity or urgency, even if the numbers are not formally updated yet.",
+          firstStep: "Write one sentence about what feels different from the start.",
+        },
+        {
+          title: "Keep, adjust or release",
+          detail:
+            "Review the actions you tried and decide which ones are worth carrying forward. A plan earns its place by helping, not by demanding loyalty.",
+          firstStep: "Make three headings: Keep, Adjust, Release.",
+        },
+        {
+          title: "Choose your next focus",
+          detail:
+            "Name the one life area that would benefit most from another month of kind, practical attention. This prevents slipping back into 'everything at once.'",
+          firstStep: "Pick one area, then write why it matters now.",
+        },
       ],
+      reflectionPrompt:
+        "If the next month were shaped around one wiser decision from this month, what would it be?",
+      encouragement:
+        "Progress is not proving that life is fixed. It is noticing that you have more choice than before.",
     },
   ],
-};
+  closingNote:
+    "You do not need to complete this perfectly for it to matter. The plan has done its job if it helps you feel a little clearer, a little less pinned down, and more able to choose your next move with intention.",
+};;
 
 function getScoreColour(score: number) {
   if (score <= 33) return "#dc2626";
@@ -715,36 +836,98 @@ Use this naturally. Do not list it back mechanically.
         />
       )}
 
-      {step === "actionPlan" && actionPlan && (
-        <section className="card results-card">
-          <p className="eyebrow">Your 30-day plan</p>
+            {step === "actionPlan" && actionPlan && (
+        <section className="card results-card premium-plan-card">
+          <div className="premium-plan-hero">
+            <p className="eyebrow">Your 30-day plan</p>
 
-          <h2>{actionPlan.title}</h2>
+            <h2>{actionPlan.title}</h2>
 
-          <p className="intro">{actionPlan.summary}</p>
+            <p className="premium-plan-subtitle">{actionPlan.subtitle}</p>
 
-          <div className="plan-weeks">
-            {actionPlan.weeks.map((week) => (
-              <div className="plan-week" key={week.week}>
-                <span>Week {week.week}</span>
-                <h3>{week.theme}</h3>
-                <p>{week.focus}</p>
+            <div className="premium-plan-opening">
+              <p>{actionPlan.openingNote}</p>
+            </div>
+          </div>
 
-                <ul>
-                  {week.actions.map((action) => (
-                    <li key={action}>{action}</li>
-                  ))}
-                </ul>
+          <div className="premium-plan-context">
+            <section className="premium-pattern-card">
+              <p className="eyebrow">What this plan is responding to</p>
+              <h3>The pattern beneath the pressure</h3>
+              <p>{actionPlan.patternSummary}</p>
+            </section>
+
+            <section className="premium-priorities-card">
+              <p className="eyebrow">Your guiding priorities</p>
+              <div className="premium-priority-list">
+                {actionPlan.priorities.map((priority, index) => (
+                  <div className="premium-priority-item" key={`${priority.title}-${index}`}>
+                    <span>{index + 1}</span>
+                    <div>
+                      <h4>{priority.title}</h4>
+                      <p>{priority.detail}</p>
+                    </div>
+                  </div>
+                ))}
               </div>
+            </section>
+          </div>
+
+          <div className="premium-plan-weeks">
+            {actionPlan.weeks.map((week) => (
+              <article className="premium-week-card" key={week.week}>
+                <div className="premium-week-heading">
+                  <span>Week {week.week}</span>
+                  <div>
+                    <h3>{week.theme}</h3>
+                    <p>{week.focus}</p>
+                  </div>
+                </div>
+
+                <div className="premium-week-why">
+                  <strong>Why this week matters</strong>
+                  <p>{week.whyThisWeek}</p>
+                </div>
+
+                <div className="premium-action-list">
+                  {week.actions.map((action, index) => (
+                    <div className="premium-action-card" key={`${action.title}-${index}`}>
+                      <span>{index + 1}</span>
+                      <div>
+                        <h4>{action.title}</h4>
+                        <p>{action.detail}</p>
+                        <small>
+                          <strong>First step:</strong> {action.firstStep}
+                        </small>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="premium-week-footer">
+                  <div className="premium-reflection">
+                    <strong>Reflection</strong>
+                    <p>{week.reflectionPrompt}</p>
+                  </div>
+
+                  <div className="premium-encouragement">
+                    <p>{week.encouragement}</p>
+                  </div>
+                </div>
+              </article>
             ))}
           </div>
 
-          <button onClick={() => setStep("wheel")}>Back to Life Picture</button>
+          <div className="premium-plan-closing">
+            <p className="eyebrow">A final note</p>
+            <p>{actionPlan.closingNote}</p>
+          </div>
+
+          <div className="premium-plan-actions">
+            <button onClick={() => setStep("wheel")}>Back to Life Picture</button>
+          </div>
         </section>
       )}
-    </main>
-  );
-}
 
 function LifePictureProgress({
   coverage,

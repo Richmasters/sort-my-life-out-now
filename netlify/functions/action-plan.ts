@@ -4,7 +4,7 @@ function wait(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-async function fetchWithTimeout(url: string, options: any, timeoutMs = 15000) {
+async function fetchWithTimeout(url: string, options: any, timeoutMs = 22000) {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), timeoutMs);
 
@@ -29,12 +29,12 @@ async function callOpenRouter(messages: any[], attempt = 1): Promise<any> {
         },
         body: JSON.stringify({
           model: "x-ai/grok-4.3",
-          temperature: 0.3,
-          max_tokens: 1500,
+          temperature: 0.34,
+          max_tokens: 3600,
           messages,
         }),
       },
-      15000
+      22000
     );
 
     if (!response.ok) {
@@ -47,7 +47,7 @@ async function callOpenRouter(messages: any[], attempt = 1): Promise<any> {
     return await response.json();
   } catch (error) {
     if (attempt >= 2) throw error;
-    await wait(800);
+    await wait(900);
     return callOpenRouter(messages, attempt + 1);
   }
 }
@@ -63,75 +63,223 @@ export async function handler(event: any) {
     }
 
     const { onboarding, result, messages } = JSON.parse(event.body || "{}");
-
-    const recentMessages = Array.isArray(messages) ? messages.slice(-10) : [];
+    const recentMessages = Array.isArray(messages) ? messages.slice(-18) : [];
 
     const data = await callOpenRouter([
       {
         role: "system",
         content: `
-You create practical 30-day action plans for the app "Sort My Life Out Now".
+You create deeply personalised 30-day plans for the app "Sort My Life Out Now".
+
+The plan is the emotional payoff of the experience.
+It should feel like:
+- a thoughtful, beautifully considered personal plan
+- something made carefully from what the person actually said
+- warm, grounded, humane and practical
+- nuanced rather than generic
+- ambitious enough to matter, gentle enough to follow
 
 Return ONLY valid JSON.
 No markdown.
 No explanation.
 No code block.
 
-The plan should feel:
-- warm
-- realistic
-- encouraging
-- specific to the user's life audit
-- not generic
-- not overwhelming
-
 Return exactly this JSON shape:
 
 {
   "title": "string",
-  "summary": "short warm summary",
+  "subtitle": "string",
+  "openingNote": "string",
+  "patternSummary": "string",
+  "priorities": [
+    {
+      "title": "string",
+      "detail": "string"
+    },
+    {
+      "title": "string",
+      "detail": "string"
+    },
+    {
+      "title": "string",
+      "detail": "string"
+    }
+  ],
   "weeks": [
     {
       "week": 1,
       "theme": "string",
       "focus": "string",
-      "actions": ["action", "action", "action"]
+      "whyThisWeek": "string",
+      "actions": [
+        {
+          "title": "string",
+          "detail": "string",
+          "firstStep": "string"
+        },
+        {
+          "title": "string",
+          "detail": "string",
+          "firstStep": "string"
+        },
+        {
+          "title": "string",
+          "detail": "string",
+          "firstStep": "string"
+        }
+      ],
+      "reflectionPrompt": "string",
+      "encouragement": "string"
     },
     {
       "week": 2,
       "theme": "string",
       "focus": "string",
-      "actions": ["action", "action", "action"]
+      "whyThisWeek": "string",
+      "actions": [
+        {
+          "title": "string",
+          "detail": "string",
+          "firstStep": "string"
+        },
+        {
+          "title": "string",
+          "detail": "string",
+          "firstStep": "string"
+        },
+        {
+          "title": "string",
+          "detail": "string",
+          "firstStep": "string"
+        }
+      ],
+      "reflectionPrompt": "string",
+      "encouragement": "string"
     },
     {
       "week": 3,
       "theme": "string",
       "focus": "string",
-      "actions": ["action", "action", "action"]
+      "whyThisWeek": "string",
+      "actions": [
+        {
+          "title": "string",
+          "detail": "string",
+          "firstStep": "string"
+        },
+        {
+          "title": "string",
+          "detail": "string",
+          "firstStep": "string"
+        },
+        {
+          "title": "string",
+          "detail": "string",
+          "firstStep": "string"
+        }
+      ],
+      "reflectionPrompt": "string",
+      "encouragement": "string"
     },
     {
       "week": 4,
       "theme": "string",
       "focus": "string",
-      "actions": ["action", "action", "action"]
+      "whyThisWeek": "string",
+      "actions": [
+        {
+          "title": "string",
+          "detail": "string",
+          "firstStep": "string"
+        },
+        {
+          "title": "string",
+          "detail": "string",
+          "firstStep": "string"
+        },
+        {
+          "title": "string",
+          "detail": "string",
+          "firstStep": "string"
+        }
+      ],
+      "reflectionPrompt": "string",
+      "encouragement": "string"
     }
-  ]
+  ],
+  "closingNote": "string"
 }
 
-Rules:
-- Use the user's onboarding, conversation, scores, insights and quick wins.
-- Week 1 should stabilise and reduce pressure.
-- Week 2 should clear obvious friction.
-- Week 3 should build rhythm and consistency.
-- Week 4 should review, refine and choose the next focus.
-- Each week must contain exactly 3 actions.
-- Actions must be small enough to do soon.
-- Avoid vague advice like "be more mindful" unless made practical.
-- Avoid therapy, medical, legal or financial claims.
-- Do not diagnose.
+CONTENT EXPECTATIONS
+
+The title should feel personal and elegant. Avoid bland titles such as "Your Action Plan" unless refined by context.
+
+The subtitle should be concise and reassuring.
+
+The opening note should be 2-4 sentences. It should make clear that this plan is not about fixing everything at once; it is about relieving pressure, creating clarity and building movement.
+
+The pattern summary should describe the most important relationship between the user's life areas. For example: work pressure affecting body and home; money anxiety feeding mental noise; life admin draining purpose. Do not invent connections that are not supported.
+
+The three priorities should be:
+- short titles
+- clearly grounded in the conversation and Life Picture
+- practical enough to anchor the plan
+
+WEEKLY SHAPE
+
+Week 1:
+- Stabilise and create breathing room.
+- Reduce immediate pressure.
+- Make the person feel capable of beginning.
+
+Week 2:
+- Clear friction and deal with background drag.
+- Practical loose ends, avoided tasks, conversations or environmental pressure where relevant.
+
+Week 3:
+- Build rhythm and repeatability.
+- Introduce small systems or routines that make life easier.
+
+Week 4:
+- Review, refine and decide what continues.
+- Help the person notice changes and identify their next focus.
+
+ACTIONS
+
+Each week must contain exactly 3 actions.
+
+Each action must include:
+- title: crisp and motivating
+- detail: 1-3 sentences explaining exactly what to do and why it matters for this user
+- firstStep: one tiny starting move that lowers friction
+
+Actions should feel specific, usable and emotionally intelligent.
+Avoid vague advice like "be more mindful" unless translated into a practical behaviour.
+Avoid grand overhauls.
+Avoid giving the same action in several words.
+
+REFLECTIONS
+
+Each week should include one reflection prompt that helps the user notice whether the week is helping.
+It should be gentle, not homework-heavy.
+
+Each week should include one short encouragement line.
+
+SAFETY AND TRUST
+
+- Avoid diagnosis.
+- Avoid therapy claims.
+- Avoid medical, legal or financial claims.
 - Do not promise outcomes.
-- Do not create huge life overhauls.
-- Make it feel like a calm plan a real person could actually follow.
+- Do not shame.
+- Do not imply certainty where the conversation was unclear.
+- Use careful language where needed: "it seems", "this may help", "from what you shared".
+
+STYLE
+
+Warm. Clear. Specific. Elegant.
+The plan should feel crafted, not templated.
+Use the user's actual pressures, hopes, scores, insights and quick wins.
         `,
       },
       {
