@@ -53,7 +53,7 @@ async function callOpenRouter(messages: any[], attempt = 1): Promise<any> {
           "X-OpenRouter-Title": "Sort My Life Out Now",
         },
         body: JSON.stringify({
-          model: "inception/mercury-2",
+          model: "meta-llama/llama-4-maverick",
           temperature: 0.35,
           max_tokens: 650,
           response_format: { type: "json_object" },
