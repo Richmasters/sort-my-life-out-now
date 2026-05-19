@@ -128,6 +128,14 @@ function looksLikeJson(value: string) {
   );
 }
 
+function isFinalCheckInvitation(value: string) {
+  const lower = value.toLowerCase();
+  return (
+    lower.includes("before i turn this into your life picture") ||
+    (lower.includes("anything else") && lower.includes("life picture"))
+  );
+}
+
 function countRealUserMessages(messages: any[]) {
   return messages.filter((message) => {
     if (message?.role !== "user" || typeof message?.content !== "string") {
@@ -144,7 +152,9 @@ function applyConversationGuard(
   userMessageCount: number,
   currentPhase: ConversationPhase
 ): ConversationPhase {
-  if (currentPhase === "finalCheck") return "ready";
+  if (currentPhase === "finalCheck") {
+    return phase === "ready" ? "ready" : "finalCheck";
+  }
   if (phase !== "exploring") return phase;
 
   const coveredCount = Object.values(coverage).filter(
@@ -323,7 +333,7 @@ Keep the conversation purposeful enough that the user feels:
     }
 
     const nextCoverage = safeCoverage(parsed.coverage);
-    const nextPhase = applyConversationGuard(
+    const guardedPhase = applyConversationGuard(
       safePhase(parsed.phase),
       nextCoverage,
       userMessageCount,
@@ -336,6 +346,10 @@ Keep the conversation purposeful enough that the user feels:
       !looksLikeJson(parsed.reply)
         ? parsed.reply.trim()
         : "I’m still here with you. Could you say that again slightly differently?";
+
+    const nextPhase = isFinalCheckInvitation(reply)
+      ? "finalCheck"
+      : guardedPhase;
 
     return {
       statusCode: 200,
