@@ -6,6 +6,7 @@ import {
   ClipboardList,
   Heart,
   Home,
+  Printer,
   Sparkles,
   Wallet,
 } from "lucide-react";
@@ -463,6 +464,10 @@ Use this naturally. Do not list it back mechanically.
     }
   }
 
+  function exportActionPlan() {
+    window.print();
+  }
+
   const coverageStats = useMemo(() => {
     const values = Object.values(coverage);
     return {
@@ -873,6 +878,14 @@ Use this naturally. Do not list it back mechanically.
           </div>
 
           <div className="premium-plan-actions">
+            <button
+              type="button"
+              className="premium-export-button"
+              onClick={exportActionPlan}
+            >
+              <Printer aria-hidden="true" />
+              Save as PDF
+            </button>
             <button onClick={() => setStep("wheel")}>Back to Life Picture</button>
           </div>
         </section>

@@ -1541,8 +1541,22 @@ textarea:disabled {
 }
 
 .premium-plan-actions {
+  gap: 12px;
   justify-content: flex-end;
   padding-top: 0;
+}
+
+.premium-export-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  background: #e8b570;
+  color: #1c2b1e;
+}
+
+.premium-export-button svg {
+  width: 18px;
+  height: 18px;
 }
 
 @media (max-width: 860px) {
@@ -1606,6 +1620,83 @@ textarea:disabled {
 
   .premium-plan-actions button {
     width: 100%;
+  }
+}
+
+@media print {
+  @page {
+    margin: 14mm;
+  }
+
+  html,
+  body,
+  #root {
+    background: white !important;
+    min-height: auto;
+  }
+
+  body {
+    color: #1c2b1e;
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+
+  .app {
+    display: block;
+    min-height: auto;
+    padding: 0;
+    background: white !important;
+  }
+
+  .premium-plan-card {
+    width: 100%;
+    max-width: none;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+    overflow: visible;
+  }
+
+  .premium-plan-hero {
+    padding: 32px;
+  }
+
+  .premium-plan-card h2 {
+    font-size: 46px;
+  }
+
+  .premium-plan-context,
+  .premium-plan-weeks,
+  .premium-plan-closing {
+    margin: 24px 0;
+  }
+
+  .premium-plan-context {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .premium-week-card,
+  .premium-pattern-card,
+  .premium-priorities-card,
+  .premium-plan-closing {
+    break-inside: avoid;
+    page-break-inside: avoid;
+    background: white;
+  }
+
+  .premium-week-heading {
+    padding: 22px;
+  }
+
+  .premium-action-card {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  .premium-plan-actions,
+  .premium-unlock,
+  .voice-button {
+    display: none !important;
   }
 }
 
