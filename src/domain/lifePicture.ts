@@ -52,22 +52,32 @@ export type ActionPlan = {
 
 export type Zone = {
   label: string;
-  icon: string;
+  icon: ZoneIcon;
 };
+
+export type ZoneIcon =
+  | "brain"
+  | "activity"
+  | "wallet"
+  | "briefcase"
+  | "heart"
+  | "home"
+  | "clipboard"
+  | "sparkles";
 
 export type CoverageState = "unexplored" | "forming" | "clear";
 export type ConversationPhase = "exploring" | "finalCheck" | "ready";
 export type CoverageMap = Record<string, CoverageState>;
 
 export const zones: Zone[] = [
-  { label: "Mind", icon: "\u{1F9E0}" },
-  { label: "Body", icon: "\u{1F4AA}" },
-  { label: "Money", icon: "\u{1F4B0}" },
-  { label: "Work", icon: "\u{1F4BC}" },
-  { label: "Love", icon: "\u2764\uFE0F" },
-  { label: "Home", icon: "\u{1F3E0}" },
-  { label: "Life Admin", icon: "\u{1F5C2}\uFE0F" },
-  { label: "Purpose", icon: "\u{1F31F}" },
+  { label: "Mind", icon: "brain" },
+  { label: "Body", icon: "activity" },
+  { label: "Money", icon: "wallet" },
+  { label: "Work", icon: "briefcase" },
+  { label: "Love", icon: "heart" },
+  { label: "Home", icon: "home" },
+  { label: "Life Admin", icon: "clipboard" },
+  { label: "Purpose", icon: "sparkles" },
 ];
 
 export const initialCoverage: CoverageMap = {

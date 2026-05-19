@@ -1,4 +1,14 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import {
+  Activity,
+  Brain,
+  BriefcaseBusiness,
+  ClipboardList,
+  Heart,
+  Home,
+  Sparkles,
+  Wallet,
+} from "lucide-react";
 import "./App.css";
 import {
   calculateAverage,
@@ -23,7 +33,30 @@ import type {
   Onboarding,
   Result,
   Step,
+  ZoneIcon,
 } from "./domain/lifePicture";
+
+const zoneIcons = {
+  brain: Brain,
+  activity: Activity,
+  wallet: Wallet,
+  briefcase: BriefcaseBusiness,
+  heart: Heart,
+  home: Home,
+  clipboard: ClipboardList,
+  sparkles: Sparkles,
+} satisfies Record<ZoneIcon, typeof Brain>;
+
+function ZoneIconMark({
+  icon,
+  className,
+}: {
+  icon: ZoneIcon;
+  className?: string;
+}) {
+  const Icon = zoneIcons[icon];
+  return <Icon aria-hidden="true" className={className} strokeWidth={1.9} />;
+}
 
 const fallbackResult: Result = {
   scores: {
@@ -884,7 +917,7 @@ function LifePictureProgress({
               key={zone.label}
               title={`${zone.label}: ${getCoverageLabel(state)}`}
             >
-              <em>{zone.icon}</em>
+              <ZoneIconMark icon={zone.icon} className="coverage-pill-icon" />
               {zone.label}
             </span>
           );
@@ -973,7 +1006,8 @@ function ResultsScreen({
               >
                 <span>{index + 1}</span>
                 <strong>
-                  {zone.icon} {zone.label}
+                  <ZoneIconMark icon={zone.icon} className="focus-item-icon" />
+                  {zone.label}
                 </strong>
                 <em style={{ color: colour }}>{score}/100</em>
                 <small>{status.label}</small>
@@ -1046,7 +1080,12 @@ function LifeWheel({
 
   return (
     <div className="life-wheel-wrap">
-      <svg viewBox="0 0 400 400" className="life-wheel segmented-wheel">
+      <div className="life-wheel-stage">
+        <svg
+          viewBox="0 0 400 400"
+          className="life-wheel segmented-wheel"
+          aria-label="Life Picture score wheel"
+        >
         {zones.map((zone, index) => {
           const score = clampScore(scores[zone.label]);
           const colour = getScoreColour(score);
@@ -1058,7 +1097,6 @@ function LifeWheel({
           const scoreRadius =
             innerRadius + ((maxRadius - innerRadius) * score) / 100;
 
-          const labelPos = polar(center, center, 178, mid);
           const scorePos = polar(center, center, 104, mid);
 
           return (
@@ -1086,28 +1124,6 @@ function LifeWheel({
                   style={{ animationDelay: `${index * 90}ms` }}
                 />
               )}
-
-              <text
-                x={labelPos.x}
-                y={labelPos.y - 9}
-                textAnchor="middle"
-                className="wheel-icon"
-              >
-                {zone.icon}
-              </text>
-
-              <text
-                x={labelPos.x}
-                y={labelPos.y + 10}
-                textAnchor="middle"
-                className={
-                  activeZone === zone.label
-                    ? "wheel-label active"
-                    : "wheel-label"
-                }
-              >
-                {zone.label}
-              </text>
 
               <text
                 x={scorePos.x}
@@ -1140,11 +1156,39 @@ function LifeWheel({
         >
           life
         </text>
-      </svg>
+        </svg>
+
+        <div className="wheel-zone-controls" aria-label="Life Picture areas">
+          {zones.map((zone) => {
+            const score = clampScore(scores[zone.label]);
+            const isActive = activeZone === zone.label;
+
+            return (
+              <button
+                type="button"
+                className={
+                  isActive ? "wheel-zone-control active" : "wheel-zone-control"
+                }
+                key={zone.label}
+                onClick={() => setActiveZone(zone.label)}
+              >
+                <ZoneIconMark
+                  icon={zone.icon}
+                  className="wheel-zone-control-icon"
+                />
+                <span>{zone.label}</span>
+                <em style={{ color: getScoreColour(score) }}>{score}</em>
+              </button>
+            );
+          })}
+        </div>
+      </div>
 
       <div className="active-zone-card" style={{ borderColor: activeColour }}>
         <div className="active-zone-top">
-          <span>{active.icon}</span>
+          <span>
+            <ZoneIconMark icon={active.icon} className="active-zone-icon" />
+          </span>
           <strong>{active.label}</strong>
           <em style={{ color: activeColour }}>{activeScore}/100</em>
         </div>
