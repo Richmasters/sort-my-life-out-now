@@ -1,88 +1,29 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import "./App.css";
-
-type Step =
-  | "landing"
-  | "onboarding"
-  | "conversation"
-  | "analysing"
-  | "wheel"
-  | "actionPlan";
-
-type Message = {
-  role: "assistant" | "user";
-  text: string;
-};
-
-type Onboarding = {
-  name: string;
-  ageRange: string;
-  currentFeeling: string;
-  pressureArea: string;
-  helpWanted: string;
-};
-
-type Result = {
-  scores: Record<string, number>;
-  insights?: Record<string, string>;
-  quickWins: string[];
-};
-
-type ActionPlan = {
-  title: string;
-  subtitle: string;
-  openingNote: string;
-  patternSummary: string;
-  priorities: {
-    title: string;
-    detail: string;
-  }[];
-  weeks: {
-    week: number;
-    theme: string;
-    focus: string;
-    whyThisWeek: string;
-    actions: {
-      title: string;
-      detail: string;
-      firstStep: string;
-    }[];
-    reflectionPrompt: string;
-    encouragement: string;
-  }[];
-  closingNote: string;
-};
-
-type Zone = {
-  label: string;
-  icon: string;
-};
-
-type CoverageState = "unexplored" | "forming" | "clear";
-type ConversationPhase = "exploring" | "finalCheck" | "ready";
-type CoverageMap = Record<string, CoverageState>;
-
-const zones: Zone[] = [
-  { label: "Mind", icon: "🧠" },
-  { label: "Body", icon: "💪" },
-  { label: "Money", icon: "💰" },
-  { label: "Work", icon: "💼" },
-  { label: "Love", icon: "❤️" },
-  { label: "Home", icon: "🏠" },
-  { label: "Life Admin", icon: "🗂️" },
-  { label: "Purpose", icon: "🌟" },
-];
-
-const initialCoverage: CoverageMap = {
-  Mind: "unexplored",
-  Body: "unexplored",
-  Money: "unexplored",
-  Work: "unexplored",
-  Love: "unexplored",
-  Home: "unexplored",
-  "Life Admin": "unexplored",
-  Purpose: "unexplored",
-};
+import {
+  calculateAverage,
+  clampScore,
+  getCoverageLabel,
+  getFocusOrder,
+  getLowestZone,
+  getScoreColour,
+  getScoreStatus,
+  initialCoverage,
+  normaliseCoverage,
+  normalisePhase,
+  polar,
+  segmentPath,
+  zones,
+} from "./domain/lifePicture";
+import type {
+  ActionPlan,
+  ConversationPhase,
+  CoverageMap,
+  Message,
+  Onboarding,
+  Result,
+  Step,
+} from "./domain/lifePicture";
 
 const fallbackResult: Result = {
   scores: {
@@ -270,124 +211,6 @@ const fallbackActionPlan: ActionPlan = {
   closingNote:
     "You do not need to complete this perfectly for it to matter. The plan has done its job if it helps you feel a little clearer, a little less pinned down, and more able to choose your next move with intention.",
 };;
-
-function getScoreColour(score: number) {
-  if (score <= 33) return "#dc2626";
-  if (score <= 67) return "#f59e0b";
-  return "#16a34a";
-}
-
-function getScoreStatus(score: number) {
-  if (score <= 33) {
-    return {
-      label: "Needs attention",
-      message:
-        "This area looks like it is carrying real pressure at the moment. That does not mean failure — it simply means this may be one of the best places to start gently.",
-      encouragement:
-        "Start small. One clear, manageable action here can create more relief than trying to fix everything at once.",
-    };
-  }
-
-  if (score <= 67) {
-    return {
-      label: "Building",
-      message:
-        "There is something to work with here. This area is not broken, but it could probably feel steadier, lighter or more organised with a little focused attention.",
-      encouragement:
-        "You do not need a dramatic overhaul. A few consistent improvements could compound quickly.",
-    };
-  }
-
-  return {
-    label: "Strong",
-    message:
-      "This looks like one of your stronger areas. Something here is already working, even if the rest of life feels messy.",
-    encouragement:
-      "Notice what is supporting you here. The same strengths may help you improve other parts of life too.",
-  };
-}
-
-function clampScore(value: number | undefined) {
-  if (value === undefined || Number.isNaN(value)) return 50;
-  if (value <= 10) return Math.round(value * 10);
-  return Math.max(0, Math.min(100, Math.round(value)));
-}
-
-function calculateAverage(scores: Record<string, number>) {
-  const values = zones.map((zone) => clampScore(scores[zone.label]));
-  return Math.round(
-    values.reduce((total, score) => total + score, 0) / values.length
-  );
-}
-
-function getLowestZone(scores: Record<string, number>) {
-  return zones.reduce((lowest, zone) => {
-    const score = clampScore(scores[zone.label]);
-    const lowestScore = clampScore(scores[lowest.label]);
-    return score < lowestScore ? zone : lowest;
-  }, zones[0]);
-}
-
-function getFocusOrder(scores: Record<string, number>) {
-  return [...zones].sort(
-    (a, b) => clampScore(scores[a.label]) - clampScore(scores[b.label])
-  );
-}
-
-function polar(centerX: number, centerY: number, radius: number, angle: number) {
-  const radians = (angle * Math.PI) / 180;
-  return {
-    x: centerX + radius * Math.cos(radians),
-    y: centerY + radius * Math.sin(radians),
-  };
-}
-
-function segmentPath(
-  center: number,
-  innerRadius: number,
-  outerRadius: number,
-  startAngle: number,
-  endAngle: number
-) {
-  const a = polar(center, center, outerRadius, startAngle);
-  const b = polar(center, center, outerRadius, endAngle);
-  const c = polar(center, center, innerRadius, endAngle);
-  const d = polar(center, center, innerRadius, startAngle);
-
-  return [
-    `M ${a.x} ${a.y}`,
-    `A ${outerRadius} ${outerRadius} 0 0 1 ${b.x} ${b.y}`,
-    `L ${c.x} ${c.y}`,
-    `A ${innerRadius} ${innerRadius} 0 0 0 ${d.x} ${d.y}`,
-    "Z",
-  ].join(" ");
-}
-
-function getCoverageLabel(state: CoverageState) {
-  if (state === "clear") return "Clear enough";
-  if (state === "forming") return "Taking shape";
-  return "Not explored yet";
-}
-
-function normaliseCoverage(value: unknown): CoverageMap {
-  if (!value || typeof value !== "object") return initialCoverage;
-
-  const raw = value as Record<string, unknown>;
-
-  return zones.reduce<CoverageMap>((accumulator, zone) => {
-    const candidate = raw[zone.label];
-    accumulator[zone.label] =
-      candidate === "forming" || candidate === "clear"
-        ? candidate
-        : "unexplored";
-    return accumulator;
-  }, {});
-}
-
-function normalisePhase(value: unknown): ConversationPhase {
-  if (value === "finalCheck" || value === "ready") return value;
-  return "exploring";
-}
 
 export default function App() {
   const [step, setStep] = useState<Step>("landing");
@@ -1267,3 +1090,4 @@ function LifeWheel({
     </div>
   );
 }
+
