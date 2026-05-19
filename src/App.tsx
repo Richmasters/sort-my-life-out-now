@@ -220,6 +220,8 @@ export default function App() {
   const [actionPlan, setActionPlan] = useState<ActionPlan | null>(null);
   const [isGeneratingPlan, setIsGeneratingPlan] = useState(false);
   const [coverage, setCoverage] = useState<CoverageMap>(initialCoverage);
+  const [speakingMessage, setSpeakingMessage] = useState<number | null>(null);
+  const [speechError, setSpeechError] = useState("");
   const [conversationPhase, setConversationPhase] =
     useState<ConversationPhase>("exploring");
 
@@ -239,10 +241,19 @@ export default function App() {
   ]);
 
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const audioUrlsRef = useRef<string[]>([]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, isThinking]);
+
+  useEffect(() => {
+    return () => {
+      audioRef.current?.pause();
+      audioUrlsRef.current.forEach((url) => URL.revokeObjectURL(url));
+    };
+  }, []);
 
   function onboardingContext() {
     return `
@@ -313,6 +324,49 @@ Use this naturally. Do not list it back mechanically.
       ]);
     } finally {
       setIsThinking(false);
+    }
+  }
+
+  async function playAssistantMessage(text: string, index: number) {
+    if (speakingMessage === index) {
+      audioRef.current?.pause();
+      audioRef.current = null;
+      setSpeakingMessage(null);
+      return;
+    }
+
+    audioRef.current?.pause();
+    setSpeechError("");
+    setSpeakingMessage(index);
+
+    try {
+      const response = await fetch("/.netlify/functions/speak", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Speech request failed");
+      }
+
+      const audioBlob = await response.blob();
+      const audioUrl = URL.createObjectURL(audioBlob);
+      const audio = new Audio(audioUrl);
+
+      audioUrlsRef.current.push(audioUrl);
+      audioRef.current = audio;
+
+      audio.onended = () => setSpeakingMessage(null);
+      audio.onerror = () => {
+        setSpeakingMessage(null);
+        setSpeechError("I could not play that reply just now.");
+      };
+
+      await audio.play();
+    } catch {
+      setSpeakingMessage(null);
+      setSpeechError("Voice is not available just yet.");
     }
   }
 
@@ -587,7 +641,21 @@ Use this naturally. Do not list it back mechanically.
           <div className="messages">
             {messages.map((item, index) => (
               <div key={`${item.role}-${index}`} className={`message ${item.role}`}>
-                {item.text}
+                <p>{item.text}</p>
+                {item.role === "assistant" && (
+                  <button
+                    type="button"
+                    className="voice-button"
+                    onClick={() => playAssistantMessage(item.text, index)}
+                    aria-label={
+                      speakingMessage === index
+                        ? "Stop voice reply"
+                        : "Play voice reply"
+                    }
+                  >
+                    {speakingMessage === index ? "Stop" : "Listen"}
+                  </button>
+                )}
               </div>
             ))}
 
@@ -601,6 +669,8 @@ Use this naturally. Do not list it back mechanically.
 
             <div ref={messagesEndRef} />
           </div>
+
+          {speechError && <p className="speech-error">{speechError}</p>}
 
           {conversationPhase === "ready" ? (
             <div className="ready-panel">

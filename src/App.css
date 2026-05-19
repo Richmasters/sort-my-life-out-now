@@ -186,6 +186,10 @@ textarea:disabled {
   font-size: 15px;
 }
 
+.message p {
+  margin: 0;
+}
+
 .message.assistant {
   justify-self: start;
   background: #f5f0e8;
@@ -198,6 +202,28 @@ textarea:disabled {
   background: #1c2b1e;
   color: #f5f0e8;
   border-top-right-radius: 7px;
+}
+
+.voice-button {
+  margin-top: 10px;
+  border: 1px solid rgba(28, 43, 30, 0.12);
+  background: rgba(255, 255, 255, 0.62);
+  color: #1c2b1e;
+  box-shadow: none;
+  padding: 7px 11px;
+  font-size: 12px;
+  line-height: 1;
+}
+
+.voice-button:hover {
+  transform: translateY(-1px);
+}
+
+.speech-error {
+  margin: -6px 0 12px;
+  color: #8b5838;
+  font-size: 13px;
+  font-weight: 700;
 }
 
 .chat-input {
