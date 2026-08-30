@@ -9,30 +9,36 @@ import android.util.Log
  * This is what fills in the gaps between Android's coarse hardware volume steps —
  * without it, a 100-step slider is a lie that snaps to the same ~15 positions.
  *
- * Two backends, tried in order:
- *  - DynamicsProcessing has a true flat input-gain stage, so -2.5 dB really is -2.5 dB.
- *  - Equalizer, all bands pinned to one level, is approximately flat. The band filters
- *    overlap so the realised attenuation drifts from the requested figure, but it is
- *    monotonic, which is enough to be useful.
+ * Several backends are tried in order of quality:
  *
- * Either may fail to attach. Since Android 10, session 0 has been gated behind
- * MODIFY_AUDIO_SETTINGS_PRIVILEGED — signature-level, so not grantable via ADB or a
- * settings toggle. Attaching succeeding is also not proof it works: on a Bluetooth route
- * with A2DP hardware offload active, effects are bypassed silently. Hence [Diagnostics]
- * and its audible test.
+ *  - DynamicsProcessing has a true flat input-gain stage, so -2.5 dB really is -2.5 dB.
+ *    Its config is fussy and varies by device, so we try a few shapes rather than
+ *    concluding from one rejection that the device forbids it.
+ *  - Equalizer with every band pinned to one level is the fallback. It is only
+ *    approximately flat: the band filters overlap and sum, so the realised attenuation
+ *    tends to exceed the requested figure and carries mild tonal colouring. Monotonic
+ *    and far finer than the hardware ladder, which is what matters, but not exact.
+ *
+ * Attaching is necessary but not sufficient. With Bluetooth A2DP hardware offload
+ * active the effect attaches happily and then does nothing, because the audio never
+ * passes through the software mixer. Only an audible test settles it.
  */
 class FineGain {
 
     enum class Backend { NONE, DYNAMICS_PROCESSING, EQUALIZER }
 
+    data class Attempt(val name: String, val succeeded: Boolean, val detail: String)
+
     var backend: Backend = Backend.NONE
         private set
 
-    /** Human-readable account of what happened during [attach], for the diagnostics screen. */
-    var attachLog: String = "not attempted"
+    /** Every backend shape tried, in order, for the diagnostics screen. */
+    var attempts: List<Attempt> = emptyList()
         private set
 
-    /** Most negative attenuation this backend can deliver, in dB. */
+    /** True flat gain, or an approximation that colours the sound slightly. */
+    val isFlat: Boolean get() = backend == Backend.DYNAMICS_PROCESSING
+
     var minGainDb: Float = 0f
         private set
 
@@ -40,77 +46,100 @@ class FineGain {
     private var eq: Equalizer? = null
     private var bandLevelRangeMb: ShortArray? = null
 
-    private val notes = StringBuilder()
-
     fun attach(): Backend {
         release()
-        notes.setLength(0)
+        val log = mutableListOf<Attempt>()
 
-        if (tryDynamicsProcessing()) {
-            backend = Backend.DYNAMICS_PROCESSING
-            // DynamicsProcessing input gain has no documented floor; -40 dB is far more
-            // headroom than filling a ~4 dB hardware gap ever needs.
-            minGainDb = -40f
-        } else if (tryEqualizer()) {
-            backend = Backend.EQUALIZER
-            minGainDb = (bandLevelRangeMb?.get(0)?.toFloat() ?: 0f) / 100f
-        } else {
-            backend = Backend.NONE
-            minGainDb = 0f
+        for (shape in DP_SHAPES) {
+            if (tryDynamicsProcessing(shape, log)) {
+                backend = Backend.DYNAMICS_PROCESSING
+                minGainDb = -40f
+                attempts = log
+                return backend
+            }
         }
 
-        attachLog = notes.toString().trimEnd()
+        if (tryEqualizer(log)) {
+            backend = Backend.EQUALIZER
+            minGainDb = (bandLevelRangeMb?.get(0)?.toFloat() ?: 0f) / 100f
+            attempts = log
+            return backend
+        }
+
+        backend = Backend.NONE
+        minGainDb = 0f
+        attempts = log
         return backend
     }
 
-    private fun tryDynamicsProcessing(): Boolean {
+    /**
+     * Config shapes to try. A config with every stage disabled is the cleanest thing to
+     * ask for and works on some devices, but others reject it outright — hence the
+     * variants that switch on a stage purely to make the config acceptable. The input
+     * gain we actually use is independent of all of them.
+     */
+    private data class Shape(
+        val name: String,
+        val variant: Int,
+        val channels: Int,
+        val limiter: Boolean,
+        val postEqBands: Int
+    )
+
+    private fun tryDynamicsProcessing(shape: Shape, log: MutableList<Attempt>): Boolean {
         return try {
             val config = DynamicsProcessing.Config.Builder(
-                DynamicsProcessing.VARIANT_FAVOR_FREQUENCY_RESOLUTION,
-                CHANNELS,
+                shape.variant,
+                shape.channels,
                 /* preEqInUse = */ false, /* preEqBandCount = */ 0,
                 /* mbcInUse = */ false, /* mbcBandCount = */ 0,
-                /* postEqInUse = */ false, /* postEqBandCount = */ 0,
-                /* limiterInUse = */ false
+                /* postEqInUse = */ shape.postEqBands > 0, shape.postEqBands,
+                /* limiterInUse = */ shape.limiter
             ).build()
 
             val effect = DynamicsProcessing(EFFECT_PRIORITY, GLOBAL_SESSION, config)
             effect.setEnabled(true)
+
+            // Prove the gain stage responds before trusting it; a silent no-op here is
+            // worse than an exception, because it looks like success.
+            effect.setInputGainAllChannelsTo(0f)
+
             dp = effect
-            notes.append("DynamicsProcessing: attached to session 0, enabled=${effect.enabled}\n")
+            log += Attempt("DynamicsProcessing / ${shape.name}", true, "enabled=${effect.enabled}")
             true
         } catch (t: Throwable) {
-            notes.append("DynamicsProcessing: FAILED — ${t.javaClass.simpleName}: ${t.message}\n")
-            Log.w(TAG, "DynamicsProcessing attach failed", t)
+            log += Attempt(
+                "DynamicsProcessing / ${shape.name}",
+                false,
+                "${t.javaClass.simpleName}: ${t.message}"
+            )
+            Log.w(TAG, "DynamicsProcessing (${shape.name}) attach failed", t)
             dp = null
             false
         }
     }
 
-    private fun tryEqualizer(): Boolean {
+    private fun tryEqualizer(log: MutableList<Attempt>): Boolean {
         return try {
             val effect = Equalizer(EFFECT_PRIORITY, GLOBAL_SESSION)
             effect.setEnabled(true)
             bandLevelRangeMb = effect.bandLevelRange
             eq = effect
             val range = bandLevelRangeMb!!
-            notes.append(
-                "Equalizer: attached to session 0, enabled=${effect.enabled}, " +
-                    "bands=${effect.numberOfBands}, range=${range[0]}..${range[1]} mB\n"
+            log += Attempt(
+                "Equalizer / uniform bands",
+                true,
+                "bands=${effect.numberOfBands}, range=${range[0]}..${range[1]} mB"
             )
             true
         } catch (t: Throwable) {
-            notes.append("Equalizer: FAILED — ${t.javaClass.simpleName}: ${t.message}\n")
+            log += Attempt("Equalizer / uniform bands", false, "${t.javaClass.simpleName}: ${t.message}")
             Log.w(TAG, "Equalizer attach failed", t)
             eq = null
             false
         }
     }
 
-    /**
-     * Apply [gainDb] of attenuation (<= 0) to everything currently playing.
-     * Returns false if there is no working backend, or the call was rejected.
-     */
     fun setGainDb(gainDb: Float): Boolean {
         val clamped = gainDb.coerceIn(minGainDb, 0f)
         return try {
@@ -145,13 +174,15 @@ class FineGain {
 
     private companion object {
         const val TAG = "FineGain"
-
-        /** Audio session 0 is the global output mix — everything the device is playing. */
         const val GLOBAL_SESSION = 0
-
-        /** Effect priority; 0 is the normal value for a non-privileged app. */
         const val EFFECT_PRIORITY = 0
 
-        const val CHANNELS = 2
+        val DP_SHAPES = listOf(
+            Shape("no stages, stereo", DynamicsProcessing.VARIANT_FAVOR_FREQUENCY_RESOLUTION, 2, false, 0),
+            Shape("limiter on, stereo", DynamicsProcessing.VARIANT_FAVOR_FREQUENCY_RESOLUTION, 2, true, 0),
+            Shape("post-EQ 1 band, stereo", DynamicsProcessing.VARIANT_FAVOR_FREQUENCY_RESOLUTION, 2, false, 1),
+            Shape("limiter on, time variant", DynamicsProcessing.VARIANT_FAVOR_TIME_RESOLUTION, 2, true, 0),
+            Shape("limiter on, mono", DynamicsProcessing.VARIANT_FAVOR_FREQUENCY_RESOLUTION, 1, true, 0)
+        )
     }
 }

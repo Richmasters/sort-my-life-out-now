@@ -72,7 +72,7 @@ class MainActivity : AppCompatActivity() {
             "%.1f dB · %.1f dB per step · %s".format(
                 targetDb,
                 engine.stepSizeDb(ladder),
-                engine.fineGain.backend.name.lowercase().replace('_', ' ')
+                if (engine.fineGain.isFlat) "exact" else "approx"
             )
         }
     }

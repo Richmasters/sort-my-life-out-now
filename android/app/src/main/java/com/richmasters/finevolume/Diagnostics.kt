@@ -7,18 +7,44 @@ import android.os.Build
 
 /**
  * Reports what this device will actually let us do. The interesting question — can we
- * attach an effect to the global mix — cannot be answered from documentation, because the
- * answer varies by OEM, Android version, and output route. So we ask the device.
+ * attach an effect to the global mix — cannot be answered from documentation, because
+ * the answer varies by OEM, Android version and output route. So we ask the device.
  *
- * Note that a successful attach is necessary but not sufficient: with Bluetooth A2DP
- * hardware offload active, the effect attaches happily and then does nothing, because the
- * audio never passes through the software mixer. Only the audible test settles that.
+ * The verdict goes first and in plain words. An earlier version led with the attach log,
+ * where a failed first attempt followed by a successful fallback read as total failure.
  */
 object Diagnostics {
 
     fun report(context: Context, engine: VolumeEngine): String = buildString {
         val audioManager = context.getSystemService(AudioManager::class.java)
         val ladder = engine.ladder()
+        val fineGain = engine.fineGain
+
+        appendLine("=========================================")
+        appendLine(" VERDICT")
+        appendLine("=========================================")
+        when (fineGain.backend) {
+            FineGain.Backend.NONE -> {
+                appendLine("  100-step control:  NOT AVAILABLE")
+                appendLine()
+                appendLine("  Nothing could attach to the global mix, so the slider")
+                appendLine("  quantises to the ${ladder.steps} hardware steps below.")
+            }
+            FineGain.Backend.DYNAMICS_PROCESSING -> {
+                appendLine("  100-step control:  WORKING")
+                appendLine("  Gain stage:        DynamicsProcessing (exact, flat)")
+            }
+            FineGain.Backend.EQUALIZER -> {
+                appendLine("  100-step control:  WORKING")
+                appendLine("  Gain stage:        Equalizer (approximate)")
+                appendLine()
+                appendLine("  Uniform band levels are only roughly flat — overlapping")
+                appendLine("  filters sum, so realised attenuation tends to exceed the")
+                appendLine("  requested figure, with mild tonal colouring. Steps stay")
+                appendLine("  in order and far finer than the hardware ladder.")
+            }
+        }
+        appendLine()
 
         appendLine("DEVICE")
         appendLine("  ${Build.MANUFACTURER} ${Build.MODEL}")
@@ -46,39 +72,38 @@ object Diagnostics {
         }
         appendLine()
 
-        appendLine("FINE GAIN STAGE (session 0 — the thing that buys us 100 steps)")
-        engine.fineGain.attachLog.lines().forEach { appendLine("  $it") }
-        appendLine()
-        when (engine.fineGain.backend) {
-            FineGain.Backend.NONE -> {
-                appendLine("  RESULT: no backend attached.")
-                appendLine("  Nothing can subdivide the hardware steps. On a stock Pixel this is")
-                appendLine("  expected — session 0 is gated behind MODIFY_AUDIO_SETTINGS_PRIVILEGED,")
-                appendLine("  a signature-level permission that cannot be granted by ADB or a toggle.")
-                appendLine("  The slider still works, but it quantises to the ${ladder.steps} steps above.")
-            }
-            else -> {
-                appendLine("  RESULT: ${engine.fineGain.backend} attached, down to ${fmt(engine.fineGain.minGainDb)} dB.")
-                appendLine("  Attaching is not proof it is audible — run the audible test below.")
-            }
-        }
-        appendLine()
-
         appendLine("RESULTING RESOLUTION")
         val (floor, ceiling) = engine.rangeDb(ladder)
         appendLine("  slider range: ${fmt(floor)} dB .. ${fmt(ceiling)} dB")
-        if (engine.fineGain.backend != FineGain.Backend.NONE) {
+        if (fineGain.backend != FineGain.Backend.NONE) {
             appendLine("  ${VolumeEngine.POSITIONS} steps of ${fmt(engine.stepSizeDb(ladder))} dB each")
-            appendLine("  (1 dB is roughly the smallest change most people notice)")
+            appendLine("  (1 dB is roughly the smallest change most people notice,")
+            appendLine("   so anything at or under that is as fine as is useful)")
         } else {
             appendLine("  ${ladder.steps} steps of ~${fmt(worstGap)} dB — unchanged from stock")
         }
         appendLine()
 
-        appendLine("IF THE FINE STAGE FAILED, TRY")
-        appendLine("  Developer options > Disable Bluetooth A2DP hardware offload (needs reboot)")
-        appendLine("  Developer options > Disable absolute volume")
-        appendLine("  then reopen this screen.")
+        appendLine("ATTACH ATTEMPTS")
+        appendLine("  Backends are tried best-first. Failures above a success are")
+        appendLine("  expected and harmless — only the last line matters.")
+        appendLine()
+        if (fineGain.attempts.isEmpty()) {
+            appendLine("  (none recorded)")
+        } else {
+            fineGain.attempts.forEach { attempt ->
+                appendLine("  ${if (attempt.succeeded) "OK  " else "fail"}  ${attempt.name}")
+                appendLine("        ${attempt.detail}")
+            }
+        }
+        appendLine()
+
+        if (fineGain.backend == FineGain.Backend.NONE) {
+            appendLine("IF NOTHING ATTACHED, TRY")
+            appendLine("  Developer options > Disable Bluetooth A2DP hardware offload (needs reboot)")
+            appendLine("  Developer options > Disable absolute volume")
+            appendLine("  then tap 'Re-attach and refresh'.")
+        }
     }
 
     private fun describeDeviceType(type: Int): String = when (type) {

@@ -34,6 +34,13 @@
         android:text="" />
 
     <Button
+        android:id="@+id/buttonSweepTest"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="8dp"
+        android:text="Run sweep test (0.5 dB steps)" />
+
+    <Button
         android:id="@+id/buttonAudibleTest"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
