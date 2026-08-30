@@ -1,0 +1,58 @@
+name: Build Fine Volume APK
+
+on:
+  push:
+    branches: [claude/android-volume-control-app-u30obp]
+    paths:
+      - 'android/**'
+      - '.github/workflows/android.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.7'
+
+      - name: Build debug APK
+        working-directory: android
+        run: gradle --no-daemon assembleDebug
+
+      - name: Name the APK after the run
+        run: |
+          mkdir -p out
+          cp android/app/build/outputs/apk/debug/app-debug.apk \
+             "out/fine-volume-${GITHUB_RUN_NUMBER}.apk"
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: fine-volume-apk
+          path: out/*.apk
+
+      - name: Publish to the rolling 'latest' release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release delete latest --yes --cleanup-tag || true
+          gh release create latest out/*.apk \
+            --title "Fine Volume (latest build)" \
+            --notes "Debug APK from run #${GITHUB_RUN_NUMBER}, commit ${GITHUB_SHA:0:7}. Sideload it: open the link on the phone, allow installs from your browser." \
+            --prerelease

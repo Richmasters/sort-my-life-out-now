@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Fine Volume</string>
+    <string name="accessibility_service_label">Fine Volume key control</string>
+    <string name="accessibility_service_description">Lets the volume buttons move the volume in 1% steps instead of Android\'s much larger jumps. Reads no screen content.</string>
+</resources>
