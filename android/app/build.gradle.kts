@@ -5,12 +5,12 @@ plugins {
 
 android {
     namespace = "com.richmasters.finevolume"
-    compileSdk = 35
+    compileSdk = 34
 
     defaultConfig {
         applicationId = "com.richmasters.finevolume"
         minSdk = 28
-        targetSdk = 35
+        targetSdk = 34
         versionCode = 1
         versionName = "0.1-diagnostics"
     }

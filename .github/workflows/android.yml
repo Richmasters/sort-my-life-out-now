@@ -14,6 +14,9 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-latest
+    # A build this small has no business taking longer than this. Fail fast
+    # rather than sit on a blocked prompt for six hours.
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
 
@@ -25,6 +28,14 @@ jobs:
 
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
+        with:
+          accept-android-sdk-licenses: true
+
+      - name: Install SDK components up front
+        run: |
+          yes | sdkmanager --licenses > /dev/null 2>&1 || true
+          sdkmanager --install "platforms;android-34" "build-tools;34.0.0" "platform-tools"
+          echo "ANDROID_HOME=$ANDROID_HOME"
 
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
@@ -33,7 +44,9 @@ jobs:
 
       - name: Build debug APK
         working-directory: android
-        run: gradle --no-daemon assembleDebug
+        # stdin from /dev/null so anything that tries to prompt dies immediately
+        # instead of hanging the job.
+        run: gradle --no-daemon --stacktrace assembleDebug < /dev/null
 
       - name: Name the APK after the run
         run: |
@@ -54,5 +67,5 @@ jobs:
           gh release delete latest --yes --cleanup-tag || true
           gh release create latest out/*.apk \
             --title "Fine Volume (latest build)" \
-            --notes "Debug APK from run #${GITHUB_RUN_NUMBER}, commit ${GITHUB_SHA:0:7}. Sideload it: open the link on the phone, allow installs from your browser." \
+            --notes "Debug APK from run #${GITHUB_RUN_NUMBER}, commit ${GITHUB_SHA:0:7}. Sideload it: open this page on the phone, download the APK, allow installs from your browser." \
             --prerelease
