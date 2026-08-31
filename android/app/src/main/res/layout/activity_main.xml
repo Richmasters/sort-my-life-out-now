@@ -91,4 +91,15 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="Diagnostics" />
+
+    <TextView
+        android:id="@+id/version"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:paddingTop="4dp"
+        android:textColor="@color/text_secondary"
+        android:textSize="11sp"
+        android:fontFamily="monospace"
+        android:text="" />
 </LinearLayout>

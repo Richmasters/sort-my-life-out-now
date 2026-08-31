@@ -48,6 +48,8 @@ class MainActivity : AppCompatActivity() {
             startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
         }
 
+        binding.version.text = BuildConfig.VERSION_NAME
+
         render(VolumeController.position)
     }
 

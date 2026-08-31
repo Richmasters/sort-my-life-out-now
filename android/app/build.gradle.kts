@@ -3,6 +3,11 @@ plugins {
     id("org.jetbrains.kotlin.android")
 }
 
+// CI run number, so every build is a distinct version. Without this every APK was
+// versionCode 1, which makes an install a no-op update and leaves you unable to tell
+// which build is actually on the phone.
+val buildNumber = (System.getenv("GITHUB_RUN_NUMBER") ?: "0").toIntOrNull() ?: 0
+
 android {
     namespace = "com.richmasters.finevolume"
     compileSdk = 34
@@ -11,8 +16,8 @@ android {
         applicationId = "com.richmasters.finevolume"
         minSdk = 28
         targetSdk = 34
-        versionCode = 1
-        versionName = "0.1-diagnostics"
+        versionCode = maxOf(buildNumber, 1)
+        versionName = if (buildNumber > 0) "build " + buildNumber else "local"
     }
 
     buildTypes {
@@ -34,6 +39,7 @@ android {
     }
     buildFeatures {
         viewBinding = true
+        buildConfig = true
     }
 }
 
