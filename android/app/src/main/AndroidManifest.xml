@@ -28,6 +28,11 @@
             android:exported="false"
             android:label="Diagnostics" />
 
+        <activity
+            android:name=".CalibrationActivity"
+            android:exported="false"
+            android:label="Calibrate fine stage" />
+
         <service
             android:name=".VolumeService"
             android:exported="false"

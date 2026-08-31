@@ -12,6 +12,7 @@ object VolumeController {
 
     private const val PREFS = "fine_volume"
     private const val KEY_POSITION = "position"
+    private const val KEY_GAIN_SCALE = "gain_scale"
 
     private lateinit var prefs: SharedPreferences
     private var initialised = false
@@ -31,14 +32,25 @@ object VolumeController {
         prefs = app.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
         engine = VolumeEngine(app)
         engine.fineGain.attach()
+        engine.fineGain.gainScale = prefs.getFloat(KEY_GAIN_SCALE, 1f)
         position = prefs.getInt(KEY_POSITION, engine.positionFromHardware())
         initialised = true
     }
 
     /** Re-attach the fine stage, e.g. after the user changes a developer option. */
     fun reattach() {
+        val scale = engine.fineGain.gainScale
         engine.fineGain.release()
         engine.fineGain.attach()
+        engine.fineGain.gainScale = scale
+        set(position)
+    }
+
+    /** Store the measured delivery ratio of the fine stage. See [CalibrationActivity]. */
+    fun setGainScale(scale: Float) {
+        val clamped = scale.coerceIn(0.25f, 4f)
+        engine.fineGain.gainScale = clamped
+        prefs.edit().putFloat(KEY_GAIN_SCALE, clamped).apply()
         set(position)
     }
 

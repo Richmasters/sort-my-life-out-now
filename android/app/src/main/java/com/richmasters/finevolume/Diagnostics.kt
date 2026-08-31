@@ -72,6 +72,20 @@ object Diagnostics {
         }
         appendLine()
 
+        if (fineGain.backend != FineGain.Backend.NONE) {
+            appendLine("FINE STAGE CALIBRATION")
+            if (fineGain.isFlat) {
+                appendLine("  not needed — this backend is exact")
+            } else {
+                appendLine("  delivering %.2f dB per 1 dB requested".format(fineGain.gainScale))
+                appendLine("  usable trim: %.1f dB".format(fineGain.usableMinGainDb))
+                if (fineGain.gainScale == 1f) {
+                    appendLine("  (assumed, not measured — run Calibrate)")
+                }
+            }
+            appendLine()
+        }
+
         appendLine("RESULTING RESOLUTION")
         val (floor, ceiling) = engine.rangeDb(ladder)
         appendLine("  slider range: ${fmt(floor)} dB .. ${fmt(ceiling)} dB")

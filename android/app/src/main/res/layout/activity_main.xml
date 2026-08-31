@@ -79,6 +79,13 @@
         android:text="Enable volume key capture" />
 
     <Button
+        android:id="@+id/buttonCalibrate"
+        style="?attr/borderlessButtonStyle"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Calibrate fine stage" />
+
+    <Button
         android:id="@+id/buttonDiagnostics"
         style="?attr/borderlessButtonStyle"
         android:layout_width="match_parent"

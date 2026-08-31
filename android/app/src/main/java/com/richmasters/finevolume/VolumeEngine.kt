@@ -16,10 +16,20 @@ import android.os.Build
  *   coarse  the hardware index, via AudioManager.setStreamVolume
  *   fine    a software attenuation on the global mix, via [FineGain]
  *
- * For a target level we pick the lowest hardware step that is still *at or above* it,
- * then trim the remainder in software. If the fine stage is unavailable we fall back to
- * picking the nearest hardware step, which is no better than stock but no worse either —
- * and notably not biased loud, which ceiling-only selection would be.
+ * The obvious mapping — take the lowest hardware step at or above the target and trim
+ * the rest — moves the hardware index at every step, so the trim snaps back to zero at
+ * every hardware boundary. Any error in the fine stage then shows up as a lurch at each
+ * of those boundaries, which is the original problem rebuilt in miniature.
+ *
+ * So instead the hardware index is held still and the fine stage does the moving. A step
+ * is chosen to sit roughly mid-range of the available trim, giving headroom in both
+ * directions, and is kept until the trim runs out of room. With ~2.3 dB hardware steps
+ * and 15 dB of trim, boundaries become several times rarer and land well away from
+ * wherever you happen to be adjusting.
+ *
+ * If the fine stage is unavailable we fall back to picking the nearest hardware step,
+ * which is no better than stock but no worse either — and notably not biased loud, which
+ * ceiling-only selection would be.
  *
  * The dB figures are not assumed. getStreamVolumeDb reports what each index is actually
  * worth on this device for the output route in use, so the mapping is measured, not
@@ -36,6 +46,10 @@ class VolumeEngine(context: Context) {
      * just went to such trouble to obtain. Clamped to the device's real floor in [ladder].
      */
     var floorDbPreference: Float = -45f
+
+    /** The hardware step currently held, and the route it was chosen for. */
+    private var heldIndex: Int = -1
+    private var heldDeviceType: Int = Int.MIN_VALUE
 
     data class Ladder(
         val minIndex: Int,
@@ -156,17 +170,34 @@ class VolumeEngine(context: Context) {
         val targetDb = targetDbFor(position, ladder)
         val canTrim = fineGain.backend != FineGain.Backend.NONE
 
+        val previousIndex = heldIndex
         val index = if (canTrim) {
-            lowestIndexAtOrAbove(targetDb, ladder)
+            heldIndexFor(targetDb, ladder)
         } else {
             nearestIndex(targetDb, ladder)
         }
+        heldIndex = index
+        heldDeviceType = ladder.deviceType
 
         val hardwareDb = ladder.db[index]
         val trim = if (canTrim && hardwareDb.isFinite()) targetDb - hardwareDb else 0f
 
-        audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, index, 0)
-        val trimApplied = if (canTrim) fineGain.setGainDb(trim) else false
+        // Order matters when the hardware step moves. Raising the hardware index before
+        // the trim lands puts a brief spike of full-level audio into your ears; doing it
+        // the other way round costs only a brief dip. So whichever change makes things
+        // quieter goes first.
+        val steppingUp = previousIndex in ladder.db.indices &&
+            index != previousIndex &&
+            ladder.db[index] > ladder.db[previousIndex]
+
+        val trimApplied: Boolean
+        if (steppingUp) {
+            trimApplied = if (canTrim) fineGain.setGainDb(trim) else false
+            audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, index, 0)
+        } else {
+            audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, index, 0)
+            trimApplied = if (canTrim) fineGain.setGainDb(trim) else false
+        }
 
         return Applied(
             position = position,
@@ -178,12 +209,37 @@ class VolumeEngine(context: Context) {
         )
     }
 
-    private fun lowestIndexAtOrAbove(targetDb: Float, ladder: Ladder): Int {
+    /**
+     * Keep the hardware step we are on for as long as the fine stage can still reach the
+     * target from it. Only when the trim runs out of room do we move, and then we move to
+     * a step that leaves the target near the middle of the trim range so the next move is
+     * as far away as possible in either direction.
+     */
+    private fun heldIndexFor(targetDb: Float, ladder: Ladder): Int {
+        val usableMin = fineGain.usableMinGainDb
+
+        if (heldDeviceType == ladder.deviceType && heldIndex in (ladder.minIndex + 1)..ladder.maxIndex) {
+            val db = ladder.db[heldIndex]
+            if (db.isFinite()) {
+                val trim = targetDb - db
+                if (trim <= 0f && trim >= usableMin) return heldIndex
+            }
+        }
+
+        // Aim for a step sitting half the usable trim above the target.
+        val idealDb = targetDb - usableMin / 2f
+        var best = -1
+        var bestDistance = Float.MAX_VALUE
         for (i in (ladder.minIndex + 1)..ladder.maxIndex) {
             val db = ladder.db[i]
-            if (db.isFinite() && db >= targetDb) return i
+            if (!db.isFinite() || db < targetDb) continue
+            val distance = kotlin.math.abs(db - idealDb)
+            if (distance < bestDistance) {
+                bestDistance = distance
+                best = i
+            }
         }
-        return ladder.maxIndex
+        return if (best >= 0) best else ladder.maxIndex
     }
 
     private fun nearestIndex(targetDb: Float, ladder: Ladder): Int {
@@ -199,6 +255,36 @@ class VolumeEngine(context: Context) {
             }
         }
         return best
+    }
+
+    /**
+     * Two hardware steps roughly [targetGapDb] apart, whose exact separation we know from
+     * getStreamVolumeDb. Calibration asks the fine stage to bridge that known gap and
+     * compares by ear, which turns an unmeasurable question into an audible one.
+     * Returns louder step to quieter step, or null if the ladder is too coarse.
+     */
+    fun calibrationPair(ladder: Ladder, targetGapDb: Float = 6f): Pair<Int, Int>? {
+        var best: Pair<Int, Int>? = null
+        var bestError = Float.MAX_VALUE
+        for (louder in (ladder.minIndex + 1)..ladder.maxIndex) {
+            for (quieter in (ladder.minIndex + 1) until louder) {
+                val a = ladder.db[louder]
+                val b = ladder.db[quieter]
+                if (!a.isFinite() || !b.isFinite()) continue
+                val error = kotlin.math.abs((a - b) - targetGapDb)
+                if (error < bestError) {
+                    bestError = error
+                    best = louder to quieter
+                }
+            }
+        }
+        return best
+    }
+
+    /** Calibration only: drive both stages directly, bypassing the mapping. */
+    fun applyRawForCalibration(index: Int, rawTrimDb: Float) {
+        audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, index, 0)
+        fineGain.setRawGainDb(rawTrimDb)
     }
 
     /** Best-effort read of where the slider should sit, from the current hardware index. */

@@ -39,8 +39,29 @@ class FineGain {
     /** True flat gain, or an approximation that colours the sound slightly. */
     val isFlat: Boolean get() = backend == Backend.DYNAMICS_PROCESSING
 
+    /** Floor on the value we may *request* from the backend, in dB. */
     var minGainDb: Float = 0f
         private set
+
+    /**
+     * How much attenuation the backend actually delivers per dB requested.
+     *
+     * The Equalizer backend pins every band to one level, and overlapping filters sum,
+     * so asking for -3 dB does not reliably produce -3 dB. Getting that wrong is not a
+     * cosmetic problem: the mapping trims relative to a known hardware step, so an error
+     * here shows up as a lurch every time the hardware index moves. Measured by ear in
+     * [CalibrationActivity]; 1.0 until then, and irrelevant when the backend is flat.
+     */
+    var gainScale: Float = 1f
+
+    /** What we can actually deliver, after scaling. */
+    val achievableMinDb: Float get() = minGainDb * gainScale
+
+    /**
+     * The span the mapping is allowed to use. Kept inside the achievable range so the
+     * backend is never driven to its extreme, where linearity is least trustworthy.
+     */
+    val usableMinGainDb: Float get() = achievableMinDb * USABLE_FRACTION
 
     private var dp: DynamicsProcessing? = null
     private var eq: Equalizer? = null
@@ -140,8 +161,15 @@ class FineGain {
         }
     }
 
-    fun setGainDb(gainDb: Float): Boolean {
-        val clamped = gainDb.coerceIn(minGainDb, 0f)
+    /** [desiredDb] is the attenuation we want to hear, not the raw value sent on. */
+    fun setGainDb(desiredDb: Float): Boolean = setRawGainDb(desiredDb / gainScale)
+
+    /**
+     * Send a value straight to the backend with no scale correction. Calibration needs
+     * this, since it exists to discover what the scale should be.
+     */
+    fun setRawGainDb(rawDb: Float): Boolean {
+        val clamped = rawDb.coerceIn(minGainDb, 0f)
         return try {
             when (backend) {
                 Backend.DYNAMICS_PROCESSING -> {
@@ -176,6 +204,9 @@ class FineGain {
         const val TAG = "FineGain"
         const val GLOBAL_SESSION = 0
         const val EFFECT_PRIORITY = 0
+
+        /** Leave headroom rather than working the backend against its stops. */
+        const val USABLE_FRACTION = 0.8f
 
         val DP_SHAPES = listOf(
             Shape("no stages, stereo", DynamicsProcessing.VARIANT_FAVOR_FREQUENCY_RESOLUTION, 2, false, 0),

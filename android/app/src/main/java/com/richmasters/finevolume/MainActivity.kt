@@ -34,6 +34,9 @@ class MainActivity : AppCompatActivity() {
         binding.buttonDown.setOnClickListener { VolumeController.nudge(-1) }
         binding.buttonUp.setOnClickListener { VolumeController.nudge(+1) }
 
+        binding.buttonCalibrate.setOnClickListener {
+            startActivity(Intent(this, CalibrationActivity::class.java))
+        }
         binding.buttonDiagnostics.setOnClickListener {
             startActivity(Intent(this, DiagnosticsActivity::class.java))
         }
