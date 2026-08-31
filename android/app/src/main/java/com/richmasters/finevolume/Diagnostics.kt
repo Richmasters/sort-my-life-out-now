@@ -86,6 +86,23 @@ object Diagnostics {
             appendLine()
         }
 
+        if (fineGain.backend != FineGain.Backend.NONE) {
+            appendLine("MEASURED RESOLUTION OF THE FINE STAGE")
+            val probe = fineGain.probeResolution()
+            if (probe == null) {
+                appendLine("  probe failed")
+            } else {
+                appendLine("  smallest real step: %.2f dB".format(probe.smallestStepDb))
+                appendLine("  ${probe.note}")
+                appendLine()
+                appendLine("  requested -> stored (millibels)")
+                probe.samples.take(12).forEach { (requested, stored) ->
+                    appendLine("    %5d -> %5d".format(requested, stored))
+                }
+            }
+            appendLine()
+        }
+
         appendLine("RESULTING RESOLUTION")
         val (floor, ceiling) = engine.rangeDb(ladder)
         appendLine("  slider range: ${fmt(floor)} dB .. ${fmt(ceiling)} dB")

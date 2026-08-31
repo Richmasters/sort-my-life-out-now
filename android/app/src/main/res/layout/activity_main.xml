@@ -30,6 +30,16 @@
         android:fontFamily="monospace"
         android:text="" />
 
+    <Button
+        android:id="@+id/buttonRange"
+        style="?attr/borderlessButtonStyle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_horizontal"
+        android:layout_marginBottom="8dp"
+        android:textSize="12sp"
+        android:text="Range" />
+
     <com.richmasters.finevolume.VerticalVolumeBar
         android:id="@+id/volumeBar"
         android:layout_width="96dp"
@@ -51,7 +61,7 @@
             android:layout_weight="1"
             android:layout_marginEnd="8dp"
             android:textSize="24sp"
-            android:text="–" />
+            android:text="−" />
 
         <Button
             android:id="@+id/buttonUp"
@@ -63,43 +73,63 @@
             android:text="+" />
     </LinearLayout>
 
-    <Button
-        android:id="@+id/buttonNotification"
-        style="?attr/borderlessButtonStyle"
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
-        android:text="Show notification control" />
+        android:orientation="horizontal"
+        android:baselineAligned="false">
 
-    <Button
-        android:id="@+id/buttonKeys"
-        style="?attr/borderlessButtonStyle"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="Enable volume key capture" />
+        <Button
+            android:id="@+id/buttonNotification"
+            style="?attr/borderlessButtonStyle"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:textSize="12sp"
+            android:text="Notification" />
 
-    <Button
-        android:id="@+id/buttonCalibrate"
-        style="?attr/borderlessButtonStyle"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="Calibrate fine stage" />
+        <Button
+            android:id="@+id/buttonKeys"
+            style="?attr/borderlessButtonStyle"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:textSize="12sp"
+            android:text="Volume keys" />
+    </LinearLayout>
 
-    <Button
-        android:id="@+id/buttonDiagnostics"
-        style="?attr/borderlessButtonStyle"
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Diagnostics" />
+        android:orientation="horizontal"
+        android:baselineAligned="false">
+
+        <Button
+            android:id="@+id/buttonCalibrate"
+            style="?attr/borderlessButtonStyle"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:textSize="12sp"
+            android:text="Calibrate" />
+
+        <Button
+            android:id="@+id/buttonDiagnostics"
+            style="?attr/borderlessButtonStyle"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:textSize="12sp"
+            android:text="Diagnostics" />
+    </LinearLayout>
 
     <TextView
-        android:id="@+id/version"
+        android:id="@+id/buildLabel"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:gravity="center"
         android:paddingTop="4dp"
         android:textColor="@color/text_secondary"
         android:textSize="11sp"
-        android:fontFamily="monospace"
         android:text="" />
 </LinearLayout>

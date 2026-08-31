@@ -192,6 +192,62 @@ class FineGain {
         }
     }
 
+    data class Resolution(
+        val samples: List<Pair<Int, Int>>,
+        val smallestStepDb: Float,
+        val note: String
+    )
+
+    /**
+     * Ask the backend for a series of closely spaced values and read back what it
+     * actually stored. Both backends accept fine-grained numbers, but accepting a value
+     * and honouring it are different things: if the effect rounds internally, the slider
+     * can claim 0.45 dB steps while the real floor is a whole decibel, and the control
+     * feels coarse for reasons no amount of remapping will fix.
+     *
+     * Audible while it runs, so callers should restore the previous gain afterwards.
+     */
+    fun probeResolution(): Resolution? {
+        val samples = mutableListOf<Pair<Int, Int>>()
+
+        when (backend) {
+            Backend.EQUALIZER -> {
+                val effect = eq ?: return null
+                for (requestMb in 0 downTo -200 step 10) {
+                    runCatching {
+                        effect.setBandLevel(0, requestMb.toShort())
+                        samples += requestMb to effect.getBandLevel(0).toInt()
+                    }
+                }
+            }
+            Backend.DYNAMICS_PROCESSING -> {
+                val effect = dp ?: return null
+                for (requestMb in 0 downTo -200 step 10) {
+                    runCatching {
+                        effect.setInputGainAllChannelsTo(requestMb / 100f)
+                        val actual = (effect.getInputGainByChannelIndex(0) * 100f).toInt()
+                        samples += requestMb to actual
+                    }
+                }
+            }
+            Backend.NONE -> return null
+        }
+
+        if (samples.isEmpty()) return null
+
+        val distinct = samples.map { it.second }.distinct().sorted()
+        val smallestGap = distinct.zipWithNext { a, b -> b - a }.filter { it > 0 }.minOrNull()
+
+        val stepDb = (smallestGap ?: 0) / 100f
+        val note = when {
+            distinct.size <= 1 -> "backend ignored every request — readback never changed"
+            stepDb <= 0.11f -> "fine enough that the slider is the limiting factor"
+            stepDb >= 0.9f -> "quantised to whole decibels — this is the real floor"
+            else -> "usable, but coarser than the slider implies"
+        }
+        return Resolution(samples, stepDb, note)
+    }
+
     fun release() {
         runCatching { dp?.release() }
         runCatching { eq?.release() }

@@ -1,5 +1,6 @@
 package com.richmasters.finevolume
 
+import android.content.Intent
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
@@ -23,12 +24,24 @@ class DiagnosticsActivity : AppCompatActivity() {
         }
         binding.buttonAudibleTest.setOnClickListener { runAudibleTest() }
         binding.buttonSweepTest.setOnClickListener { runSweepTest() }
+        binding.buttonShare.setOnClickListener { shareReport() }
 
         refresh()
     }
 
     private fun refresh() {
         binding.report.text = Diagnostics.report(this, VolumeController.engine)
+        // The report probes the fine stage, which moves the gain about; put it back.
+        VolumeController.set(VolumeController.position)
+    }
+
+    private fun shareReport() {
+        val intent = Intent(Intent.ACTION_SEND).apply {
+            type = "text/plain"
+            putExtra(Intent.EXTRA_SUBJECT, "Fine Volume diagnostics")
+            putExtra(Intent.EXTRA_TEXT, binding.report.text.toString())
+        }
+        startActivity(Intent.createChooser(intent, "Share diagnostics"))
     }
 
     /**

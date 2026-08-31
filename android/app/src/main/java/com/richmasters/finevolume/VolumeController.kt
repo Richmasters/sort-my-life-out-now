@@ -13,6 +13,7 @@ object VolumeController {
     private const val PREFS = "fine_volume"
     private const val KEY_POSITION = "position"
     private const val KEY_GAIN_SCALE = "gain_scale"
+    private const val KEY_RANGE_DB = "range_db"
 
     private lateinit var prefs: SharedPreferences
     private var initialised = false
@@ -33,6 +34,7 @@ object VolumeController {
         engine = VolumeEngine(app)
         engine.fineGain.attach()
         engine.fineGain.gainScale = prefs.getFloat(KEY_GAIN_SCALE, 1f)
+        engine.floorDbPreference = -prefs.getFloat(KEY_RANGE_DB, 45f)
         position = prefs.getInt(KEY_POSITION, engine.positionFromHardware())
         initialised = true
     }
@@ -44,6 +46,26 @@ object VolumeController {
         engine.fineGain.attach()
         engine.fineGain.gainScale = scale
         set(position)
+    }
+
+    /**
+     * How many dB the hundred slider positions span. Narrowing this is the direct lever
+     * on step size: the same hundred steps over less ground means finer control, at the
+     * cost of the slider no longer reaching the very quiet end.
+     */
+    var rangeDb: Float
+        get() = -engine.floorDbPreference
+        set(value) {
+            engine.floorDbPreference = -value
+            prefs.edit().putFloat(KEY_RANGE_DB, value).apply()
+            this.set(position)
+        }
+
+    val rangeOptions = listOf(10f, 15f, 20f, 30f, 45f)
+
+    fun cycleRange() {
+        val next = rangeOptions.firstOrNull { it > rangeDb + 0.5f } ?: rangeOptions.first()
+        rangeDb = next
     }
 
     /** Store the measured delivery ratio of the fine stage. See [CalibrationActivity]. */

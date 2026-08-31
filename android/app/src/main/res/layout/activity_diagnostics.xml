@@ -47,6 +47,13 @@
         android:text="Run audible test (-12 dB for 3s)" />
 
     <Button
+        android:id="@+id/buttonShare"
+        style="?attr/borderlessButtonStyle"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Share this report" />
+
+    <Button
         android:id="@+id/buttonRefresh"
         style="?attr/borderlessButtonStyle"
         android:layout_width="match_parent"

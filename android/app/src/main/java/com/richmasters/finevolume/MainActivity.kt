@@ -34,6 +34,10 @@ class MainActivity : AppCompatActivity() {
         binding.buttonDown.setOnClickListener { VolumeController.nudge(-1) }
         binding.buttonUp.setOnClickListener { VolumeController.nudge(+1) }
 
+        binding.buttonRange.setOnClickListener {
+            VolumeController.cycleRange()
+            render(VolumeController.position)
+        }
         binding.buttonCalibrate.setOnClickListener {
             startActivity(Intent(this, CalibrationActivity::class.java))
         }
@@ -48,8 +52,8 @@ class MainActivity : AppCompatActivity() {
             startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
         }
 
-        binding.version.text = BuildConfig.VERSION_NAME
 
+        binding.buildLabel.text = "Fine Volume " + BuildConfig.VERSION_NAME
         render(VolumeController.position)
     }
 
@@ -70,6 +74,8 @@ class MainActivity : AppCompatActivity() {
         val engine = VolumeController.engine
         val ladder = engine.ladder()
         val targetDb = engine.targetDbFor(position, ladder)
+
+        binding.buttonRange.text = "Range: %.0f dB  (tap to narrow)".format(VolumeController.rangeDb)
 
         binding.detail.text = if (engine.fineGain.backend == FineGain.Backend.NONE) {
             "%.1f dB · hardware step only · %d real steps".format(targetDb, ladder.steps)
