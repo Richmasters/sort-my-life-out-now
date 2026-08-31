@@ -60,12 +60,17 @@ jobs:
           name: fine-volume-apk
           path: out/*.apk
 
-      - name: Publish to the rolling 'latest' release
+      - name: Publish this build to its own permanent release
         env:
           GH_TOKEN: ${{ github.token }}
+        # One immutable release per build. The previous approach deleted and recreated a
+        # rolling 'latest' tag, which meant the asset a browser had been pointed at could
+        # vanish mid-download — release downloads redirect to a signed URL tied to a
+        # specific asset object, so a retry against a deleted one stalls at zero bytes
+        # forever while still claiming to be downloading.
         run: |
-          gh release delete latest --yes --cleanup-tag || true
-          gh release create latest out/*.apk \
-            --title "Fine Volume (latest build)" \
-            --notes "Debug APK from run #${GITHUB_RUN_NUMBER}, commit ${GITHUB_SHA:0:7}. Sideload it: open this page on the phone, download the APK, allow installs from your browser." \
+          gh release create "build-${GITHUB_RUN_NUMBER}" out/*.apk \
+            --title "Fine Volume build ${GITHUB_RUN_NUMBER}" \
+            --notes "Commit ${GITHUB_SHA:0:7}. Open this page on the phone and tap the APK to install." \
             --prerelease
+          echo "APK: https://github.com/${GITHUB_REPOSITORY}/releases/tag/build-${GITHUB_RUN_NUMBER}" >> "$GITHUB_STEP_SUMMARY"
