@@ -281,6 +281,18 @@ class VolumeEngine(context: Context) {
         return best
     }
 
+    /**
+     * Put the hardware index back around two thirds of the way up and forget any held
+     * step, so the device behaves normally again once our effect is gone.
+     */
+    fun restoreHardwareToComfortable() {
+        val ladder = ladder()
+        val index = (ladder.maxIndex * 2) / 3
+        audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, index.coerceAtLeast(1), 0)
+        heldIndex = -1
+        heldDeviceType = Int.MIN_VALUE
+    }
+
     /** Calibration only: drive both stages directly, bypassing the mapping. */
     fun applyRawForCalibration(index: Int, rawTrimDb: Float) {
         audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, index, 0)

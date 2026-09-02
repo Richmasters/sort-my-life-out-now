@@ -6,6 +6,7 @@ import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import com.richmasters.finevolume.databinding.ActivityMainBinding
@@ -52,6 +53,18 @@ class MainActivity : AppCompatActivity() {
             startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
         }
 
+
+        binding.buttonRestore.setOnClickListener {
+            VolumeController.panicRestore()
+            stopService(Intent(this, VolumeService::class.java))
+            Toast.makeText(
+                this,
+                "Audio effect released and volume restored. Turn off the accessibility " +
+                    "service too if the volume keys are still not responding.",
+                Toast.LENGTH_LONG
+            ).show()
+            render(VolumeController.position)
+        }
 
         binding.buildLabel.text = "Fine Volume " + BuildConfig.VERSION_NAME
         render(VolumeController.position)

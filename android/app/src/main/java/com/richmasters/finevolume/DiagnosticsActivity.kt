@@ -97,6 +97,13 @@ class DiagnosticsActivity : AppCompatActivity() {
         }
     }
 
+    override fun onPause() {
+        // Leaving mid-test must not strand the gain wherever the test had pushed it.
+        handler.removeCallbacksAndMessages(null)
+        VolumeController.set(VolumeController.position)
+        super.onPause()
+    }
+
     override fun onDestroy() {
         handler.removeCallbacksAndMessages(null)
         VolumeController.engine.fineGain.setGainDb(0f)

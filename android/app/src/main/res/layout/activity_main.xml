@@ -123,6 +123,15 @@
             android:text="Diagnostics" />
     </LinearLayout>
 
+    <Button
+        android:id="@+id/buttonRestore"
+        style="?attr/borderlessButtonStyle"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textSize="12sp"
+        android:textColor="#FF8A80"
+        android:text="Restore normal volume" />
+
     <TextView
         android:id="@+id/buildLabel"
         android:layout_width="match_parent"

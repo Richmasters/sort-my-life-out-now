@@ -18,6 +18,9 @@ object VolumeController {
     private lateinit var prefs: SharedPreferences
     private var initialised = false
 
+    /** Whether it is safe to act. Consumers must not swallow input before this is true. */
+    val isReady: Boolean get() = initialised
+
     lateinit var engine: VolumeEngine
         private set
 
@@ -66,6 +69,24 @@ object VolumeController {
     fun cycleRange() {
         val next = rangeOptions.firstOrNull { it > rangeDb + 0.5f } ?: rangeOptions.first()
         rangeDb = next
+    }
+
+    /**
+     * Undo everything this app has done to the device's audio: drop the global effect,
+     * and put the hardware back somewhere sensible and audible.
+     *
+     * Exists because the failure mode here is genuinely nasty — a global effect left
+     * attenuating, or a hardware index left low, looks to the user like the phone itself
+     * has broken, with no clue that this app is responsible. There must always be one
+     * obvious way back that does not involve Settings.
+     */
+    fun panicRestore() {
+        runCatching { engine.fineGain.setRawGainDb(0f) }
+        runCatching { engine.fineGain.release() }
+        runCatching { engine.restoreHardwareToComfortable() }
+        prefs.edit().putInt(KEY_POSITION, 70).apply()
+        position = 70
+        listeners.toList().forEach { it(position) }
     }
 
     /** Store the measured delivery ratio of the fine stage. See [CalibrationActivity]. */
